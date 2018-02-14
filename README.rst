@@ -19,7 +19,7 @@ Installation
   Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` and ``SOURCE_JUPYTER_CALL``.
 
     ``jupyter-o2.cfg`` *should be installed upon setup.*
-    *If not, you may also copy* ``jupyter_o2/jupyter-o2.cfg`` *into your home folder as* ``.jupyter-o2.cfg``*.*
+    *If not, you may also copy* ``jupyter_o2/jupyter-o2.cfg`` *into your home folder as* ``.jupyter-o2.cfg``.
 
 Usage
 ------------------------------
