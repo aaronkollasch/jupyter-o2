@@ -6,7 +6,6 @@
 # Icon must end with two \r
 Icon
 
-
 # Thumbnails
 ._*
 
@@ -28,3 +27,12 @@ Temporary Items
 
 # PyCharm .idea info not necessary here
 .idea
+
+*.pyc
+*.egg
+build/*.*
+build
+dist/*/*
+jupyter_o2.egg-info
+/ChangeLog
+/AUTHORS
