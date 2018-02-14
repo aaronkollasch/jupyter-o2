@@ -7,17 +7,19 @@ and runs Jupyter on Orchestra 2, an HPC cluster managed by the HMS Resesarch Com
 
 Installation
 ------------------------------
-First follow the `O2 wiki's procedure <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_
-to set up Jupyter for your account on O2.
+* First, follow the `O2 wiki's procedure <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_
+  to set up Jupyter for your account on O2.
 
-Next install Jupyter-O2.::
+* Next, install Jupyter-O2.::
 
     $ pip install jupyter-o2
 
-Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``, where ``etc`` is located either in the
-environment root or the system-wide ``/etc`` directory. (The file should be installed upon setup.
-If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as ``.jupyter-o2.cfg``.)
-Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` and ``SOURCE_JUPYTER_CALL``.
+* Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``, where ``etc`` is located either in the
+  environment root or the system-wide ``/etc`` directory.
+  Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` and ``SOURCE_JUPYTER_CALL``.
+
+    ``jupyter-o2.cfg`` *should be installed upon setup.*
+    *If not, you may also copy* ``jupyter_o2/jupyter-o2.cfg`` *into your home folder as* ``.jupyter-o2.cfg``*.*
 
 Usage
 ------------------------------
