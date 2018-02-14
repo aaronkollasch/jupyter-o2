@@ -1,3 +1,4 @@
+from pbr.version import VersionInfo
 from .utils import (
     eprint,
     join_cmd,
@@ -17,3 +18,12 @@ from .pysectools import (
     PinentryErrorException
 )
 from .jupyter_o2 import main, JupyterO2, JO2_ARG_PARSER
+
+_v = VersionInfo('jupyter-o2').semantic_version()
+__version__ = _v.release_string()
+version_info = _v.version_tuple()
+
+__author__ = "Aaron Kollasch"
+__copyright__ = "Copyright 2017-2018, Aaron Kollasch"
+__email__ = "awkollasch@gmail.com"
+__status__ = "Production"
