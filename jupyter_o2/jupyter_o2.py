@@ -61,7 +61,7 @@ SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
 
 JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2.')
 JO2_ARG_PARSER.add_argument("user", type=str, help="O2 username")
-JO2_ARG_PARSER.add_argument("subcommand", help="the subcommand to launch")
+JO2_ARG_PARSER.add_argument("subcommand", type=str, help="the subcommand to launch")
 JO2_ARG_PARSER.add_argument("--host", type=str, default=DEFAULT_HOST, help="Host to connect to")
 JO2_ARG_PARSER.add_argument("-p", "--port", dest="jp_port", type=int, default=DEFAULT_JP_PORT,
                             help="Available port on your system")
@@ -139,8 +139,8 @@ class JupyterO2(object):
     def __init__(
             self,
             user,
-            host,
             subcommand=DEFAULT_JP_SUBCOMMAND,
+            host=DEFAULT_HOST,
             jp_port=DEFAULT_JP_PORT,
             jp_time=DEFAULT_JP_TIME,
             jp_mem=DEFAULT_JP_MEM,
