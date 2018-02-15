@@ -2,8 +2,8 @@
 jupyter-o2
 ===========
 
-Jupyter-O2 is a command-line tool that automatically connects to
-and runs Jupyter on Orchestra 2, an HPC cluster managed by the HMS Resesarch Computing group.
+Jupyter-O2 is a command-line tool that automatically runs Jupyter on
+Orchestra 2, an HPC cluster managed by the HMS Resesarch Computing group.
 
 Installation
 ------------------------------
@@ -20,13 +20,11 @@ Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``, where ``etc`` is l
 environment root or the system-wide ``/etc`` directory.
 Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` and ``SOURCE_JUPYTER_CALL``.
 
-Note: ``jupyter-o2.cfg`` should be installed upon setup.
-If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as ``.jupyter-o2.cfg``.
-
-For info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
+    Note: ``jupyter-o2.cfg`` should be installed upon setup.
+    If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as ``.jupyter-o2.cfg``.
 
 For additional information on setting up Jupyter on O2 and troubleshooting Jupyter-O2,
-read `jupyter_o2_tips.rst`_.
+see `jupyter_o2_tips.rst`_.
 
 .. _jupyter_o2_tips.rst: jupyter_o2_tips.rst
 
@@ -40,6 +38,8 @@ Example: ``jupyter-o2 js123 notebook``
     This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
     ssh into that interactive node to allow requests to be forwarded,
     and finally open the notebook in your browser.
+
+For more info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
 
 Requirements and compatibility
 ------------------------------
