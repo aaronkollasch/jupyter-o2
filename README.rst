@@ -10,7 +10,9 @@ Installation
 First, follow the `O2 wiki's procedure <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_
 to set up Jupyter for your account on O2.
 
-Next, install Jupyter-O2.::
+Next, install Jupyter-O2.
+
+.. code-block:: console
 
     $ pip install jupyter-o2
 
@@ -23,13 +25,18 @@ If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as
 
 For info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
 
+For additional information on setting up Jupyter on O2 and troubleshooting Jupyter-O2,
+read `jupyter_o2_tips.rst`_.
+
+.. _jupyter_o2_tips.rst: jupyter_o2_tips.rst
+
 Usage
 ------------------------------
-::
+.. code-block:: console
 
-    $ jupyter_o2 <USER> <subcommand>
+    $ jupyter-o2 <USER> <subcommand>
 
-Example: ``jupyter_o2 js123 notebook``
+Example: ``jupyter-o2 js123 notebook``
     This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
     ssh into that interactive node to allow requests to be forwarded,
     and finally open the notebook in your browser.
@@ -45,3 +52,6 @@ Optional installs
 ------------------------------
 * pinentry (a command line tool)
 
+TODO
+------------------------------
+* use logging to allow different levels of verbosity
