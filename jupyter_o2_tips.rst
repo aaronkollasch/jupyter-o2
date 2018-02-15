@@ -34,9 +34,14 @@ jupyter contrib nbextensions
 
 jupyter contrib nbextensions adds a useful nbextensions configuration
 tab to the main jupyter site. It also includes many useful extensions.
-#### AutoSaveTime (recommended) Set the autosave time to 2 minutes to
-reduce the risk of losing changes due to a lost connection or closure of
-the interactive node (if it runs out of time, for example).
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+AutoSaveTime (recommended)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Set the autosave time to 2 minutes to reduce the risk of losing changes
+due to a lost connection or closure of the interactive node
+(if it runs out of time, for example).
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__
@@ -56,7 +61,7 @@ nbsignatures.db
 If jupyter hangs when opening notebooks for the first time in any
 session, and the console shows error messages such as:
 
-.. code-block:: console
+.. code-block::
 
     > The signatures database cannot be opened; maybe it is corrupted or encrypted.
     > Failed commiting signatures database to disk.
