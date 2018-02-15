@@ -26,7 +26,7 @@ Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` 
 For additional information on setting up Jupyter on O2 and troubleshooting Jupyter-O2,
 see `jupyter_o2_tips.rst`_.
 
-.. _jupyter_o2_tips.rst: jupyter_o2_tips.rst
+.. _jupyter_o2_tips.rst: https://github.com/AaronKollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
 
 Usage
 ------------------------------
@@ -35,6 +35,7 @@ Usage
     $ jupyter-o2 <USER> <subcommand>
 
 Example: ``jupyter-o2 js123 notebook``
+
     This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
     ssh into that interactive node to allow requests to be forwarded,
     and finally open the notebook in your browser.
