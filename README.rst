@@ -23,8 +23,7 @@ Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` 
     Note: ``jupyter-o2.cfg`` should be installed upon setup.
     If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as ``.jupyter-o2.cfg``.
 
-For additional information on setting up Jupyter on O2 and troubleshooting Jupyter-O2,
-see `jupyter_o2_tips.rst`_.
+For more info on setting up Jupyter and troubleshooting Jupyter-O2, see `jupyter_o2_tips.rst`_.
 
 .. _jupyter_o2_tips.rst: https://github.com/AaronKollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
 

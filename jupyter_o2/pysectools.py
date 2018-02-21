@@ -6,7 +6,7 @@ import subprocess
 import ctypes
 import getpass  # fallback if pinentry is not installed (optional "brew install pinentry" on macs)
 
-from .utils import eprint, cmd_exists
+from .utils import eprint
 
 if sys.platform.startswith("linux"):
     PINENTRY_PATH = "/usr/bin/pinentry"
@@ -21,8 +21,10 @@ else:
 #                                                               #
 # - updated pysectools for python 3:                            #
 #     uses bytestrings and flushes stdin after writing          #
-# - removed shell=True from subprocess calls                    #
+# - removed shell=True from subprocess call                     #
 # - moved cmd_exists to utils.py                                #
+# - moved cmd_exists back from utils.py                         #
+#     (since it came with pysectools                            #
 #################################################################
 
 
@@ -43,6 +45,10 @@ def zero(s):
         return True
     except Exception:
         return False
+
+
+def cmd_exists(cmd):
+    return subprocess.call(["type", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
 
 
 class PinentryException(Exception):

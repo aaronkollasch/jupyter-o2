@@ -21,10 +21,6 @@ except ImportError:
     quartz_supported = False
 
 
-def cmd_exists(cmd):
-    return subprocess.call(["type", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
-
-
 def join_cmd(cmd, args_string):
     """Create a bash command by joining cmd and args_string. Resistant to injection within args_string."""
     return ' '.join([cmd] + [quote(item) for item in shlex.split(args_string)])
