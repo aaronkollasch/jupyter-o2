@@ -16,8 +16,8 @@ Next, install Jupyter-O2.
 
     $ pip install jupyter-o2
 
-Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``, where ``etc`` is located either in the
-environment root or the system-wide ``/etc`` directory.
+Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``. ``etc/`` should be located in the
+environment root, in ``/usr/local/etc/``, or the system-wide ``/etc/`` directory.
 Edit this file according to its instructions, particularly ``DEFAULT_USER``, ``MODULE_LOAD_CALL``,
 and ``SOURCE_JUPYTER_CALL``.
 
