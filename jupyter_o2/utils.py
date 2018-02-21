@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import sys
+import logging
 from time import sleep
 import subprocess
 import shlex
@@ -76,10 +77,11 @@ def try_quit_xquartz():
         XQuartz open a dialog to ask if you really want to quit it.
     Otherwise XQuartz will silently quit.
     """
+    logger = logging.getLogger(__name__)
     if sys.platform != "darwin":
         return
     if not quartz_supported:
-        print("Quitting XQuartz is not supported. Import pyobjc-framework-Quartz with pip.")
+        logger.warning("Quitting XQuartz is not supported. Import pyobjc-framework-Quartz with pip.")
     try:
         if not xquartz_is_open():
             return
@@ -92,7 +94,7 @@ def try_quit_xquartz():
         else:
             print("\nXQuartz window(s) are open. Not quitting.")
             try:
-                print("Open windows: {}".format(
+                logger.debug("Open windows: {}".format(
                     [(window['kCGWindowName'], window['kCGWindowNumber']) for window in open_windows]))
             except KeyError:
                 pass
@@ -102,8 +104,8 @@ def try_quit_xquartz():
         else:
             print("Failed to quit.")
     except Exception as error:
-        eprint("Error: {}".format(error.__class__))
-        eprint(error)
+        logger.error("Error: {}".format(error.__class__))
+        logger.error(error)
         print("Failed to quit XQuartz.")
 
 

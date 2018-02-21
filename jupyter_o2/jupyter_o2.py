@@ -5,6 +5,7 @@ import sys
 import re
 import atexit
 from signal import signal, SIGABRT, SIGINT, SIGTERM
+import logging
 import webbrowser
 import argparse
 try:
@@ -41,14 +42,13 @@ config.add_section('Settings')
 CFG_FILENAME = "jupyter-o2.cfg"
 CFG_DIR = "jupyter-o2"
 
-if not config.read([
+CFG_LOCATIONS = config.read([
     os.path.join("/etc", CFG_DIR, CFG_FILENAME),  # /etc/jupyter-o2/jupyter-o2.cfg
     os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),  # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),  # etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
     CFG_FILENAME,  # ./jupyter-o2.cfg
-]):
-    print("Config file could not be read. Using internal defaults.")
+])
 
 DEFAULT_USER = config.get('Defaults', 'DEFAULT_USER')
 DEFAULT_HOST = config.get('Defaults', 'DEFAULT_HOST')
@@ -79,6 +79,7 @@ JO2_ARG_PARSER.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default
                             help="Do not quit XQuartz")
 JO2_ARG_PARSER.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False, action='store_true',
                             help="Enables trusted X11 forwarding. Equivalent to ssh -Y.")
+JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true')
 
 SRUN_CALL_FORMAT = "srun -t {} --mem {} -c {} --pty -p interactive --x11 /bin/bash"
 JP_CALL_FORMAT = "jupyter {} --port={} --browser='none'"
@@ -164,6 +165,8 @@ class JupyterO2(object):
         self.__o2_pass = ""
         self.__pinentry = Pinentry(pinentry_path=PINENTRY_PATH, fallback_to_getpass=True)
 
+        self.logger = logging.getLogger(__name__)
+
         login_ssh_options = {
             "ForwardX11": "yes",
             "LocalForward": "{} 127.0.0.1:{}".format(jp_port, jp_port),
@@ -196,29 +199,33 @@ class JupyterO2(object):
         Finally, open the jupyter notebook page in the browser.
         """
         # start login ssh
-        print("ssh {}@{}".format(self.user, self.host))
+        self.logger.info("Connecting to {}@{}".format(self.user, self.host))
+        self.logger.debug("SEND: ssh {}@{}".format(self.user, self.host))
         dns_err, host = check_dns(self.host)
         if dns_err == 1:
-            print("ssh {}@{}".format(self.user, host))
+            self.logger.debug("SEND: ssh {}@{}".format(self.user, host))
         elif dns_err == 2:
+            self.logger.critical("Unable to resolve host.")
             sys.exit(1)
         self.__login_ssh.force_password = True
         self.__login_ssh.silence_logs()
         self.__login_ssh.login(host, self.user, self.__o2_pass)
+        self.logger.info("Connected.")
 
         # get the login hostname
         self.__login_ssh.sendline("hostname")
         self.__login_ssh.prompt()
         jp_login_host = self.__login_ssh.before.decode('utf-8').strip().split('\n')[1]
-        print("hostname: {}".format(jp_login_host))
+        self.logger.info("Hostname: {}\n".format(jp_login_host))
 
         # enter an interactive session
-        print()
+        self.logger.info("Starting an interactive session.")
         self.__login_ssh.PROMPT = PASSWORD_PATTERN
         self.__login_ssh.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun')
         self.__login_ssh.sendline(self.srun_call)
         if not self.__login_ssh.prompt():
-            eprint("The timeout ({}) was reached.".format(self.__login_ssh.timeout))
+            self.logger.critical("The timeout ({}) was reached without receiving a password request."
+                                 .format(self.__login_ssh.timeout))
             sys.exit(1)
         self.__login_ssh.silence_logs()
         self.__login_ssh.sendline(self.__o2_pass)
@@ -230,15 +237,17 @@ class JupyterO2(object):
         self.__login_ssh.sendline("hostname | sed 's/\..*//'")
         self.__login_ssh.prompt()
         jp_interactive_host = self.__login_ssh.before.decode('utf-8').strip().split('\n')[1]
-        print("interactive node: {}\n".format(jp_interactive_host))
+        self.logger.info("Interactive session started.")
+        self.logger.info("Node: {}\n".format(jp_interactive_host))
 
         # start jupyter
+        self.logger.info("Starting Jupyter {}.".format(self.subcommand))
         if MODULE_LOAD_CALL:
-            print(join_cmd("module load", MODULE_LOAD_CALL))
+            self.logger.debug("SEND: {}".format(join_cmd("module load", MODULE_LOAD_CALL)))
             self.__login_ssh.sendline(join_cmd("module load", MODULE_LOAD_CALL))
             self.__login_ssh.prompt()
         if SOURCE_JUPYTER_CALL:
-            print(join_cmd("source", SOURCE_JUPYTER_CALL))
+            self.logger.debug("SEND: {}".format(join_cmd("source", SOURCE_JUPYTER_CALL)))
             self.__login_ssh.sendline(join_cmd("source", SOURCE_JUPYTER_CALL))
             self.__login_ssh.prompt()
         self.__login_ssh.sendline(self.jp_call)
@@ -248,44 +257,49 @@ class JupyterO2(object):
         site_pat = re.compile(SITE_PATTERN_FORMAT.format(self.jp_port).encode('utf-8'))
         self.__login_ssh.PROMPT = site_pat
         if not self.__login_ssh.prompt():  # timed out; failed to launch jupyter
-            eprint("Failed to launch jupyter. (timed out, {})".format(self.__login_ssh.timeout))
+            self.logger.critical("Failed to launch jupyter. (timed out, {})".format(self.__login_ssh.timeout))
             if self.keep_alive:
-                eprint("Starting interactive mode.")
+                self.logger.info("Starting pexpect interactive mode.")
                 self.interact()
             else:
                 sys.exit(1)
         jp_site = self.__login_ssh.after.decode('utf-8').strip()
+        self.logger.info("Jupyter {} started.".format(self.subcommand))
 
         # log in to the second ssh
-        print("\nssh {}@{}".format(self.user, jp_login_host))
+        self.logger.info("\nStarting a second connection to the login node.")
+        self.logger.debug("ssh {}@{}".format(self.user, jp_login_host))
         dns_err, jp_login_host = check_dns(jp_login_host)
         if dns_err == 1:
-            print("ssh {}@{}".format(self.user, jp_login_host))
+            self.logger.debug("ssh {}@{}".format(self.user, jp_login_host))
         elif dns_err == 2:
+            self.logger.critical("Unable to resolve host.")
             sys.exit(1)
         self.__second_ssh.force_password = True
         self.__second_ssh.silence_logs()
         self.__second_ssh.login(jp_login_host, self.user, self.__o2_pass)
 
         # ssh into the running interactive node
-        print("\nssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
+        self.logger.info("Connecting to the interactive node.")
+        self.logger.debug("ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
         self.__second_ssh.PROMPT = PASSWORD_PATTERN
         self.__second_ssh.sendline("ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
         if not self.__second_ssh.prompt():
-            eprint("The timeout ({}) was reached.".format(self.__second_ssh.timeout))
+            self.logger.critical("The timeout ({}) was reached.".format(self.__second_ssh.timeout))
             sys.exit(1)
         self.__second_ssh.silence_logs()
         self.__second_ssh.sendline(self.__o2_pass)
         zero(self.__o2_pass)  # password is not needed anymore
         self.__o2_pass = None
         self.__second_ssh.logfile_read = STDOUT_BUFFER  # print any errors/output from self.__second_ssh to stdout
+        self.logger.info("Connected.")
 
         # open Jupyter in browser
         print("\nJupyter is ready! Access at:\n{}\nOpening in browser...\n".format(jp_site))
         try:
             webbrowser.open(jp_site, new=2)
         except webbrowser.Error as error:
-            print("Error: {}\nPlease open the Jupyter page manually.".format(error))
+            self.logger.error("Error: {}\nPlease open the Jupyter page manually.".format(error))
 
         # quit XQuartz because the application is not necessary to keep the connection open.
         if not self.keep_xquartz:
@@ -333,8 +347,20 @@ class JupyterO2(object):
 
 def main():
     pargs = JO2_ARG_PARSER.parse_args()
+    pargs = vars(pargs)
 
-    jupyter_o2 = JupyterO2(**vars(pargs))
+    logging.basicConfig(level=logging.INFO, format="%(msg)s")
+    if pargs.pop('verbose'):
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    logger = logging.getLogger(__name__)
+    if not CFG_LOCATIONS:
+        logger.warning("Config file could not be read. Using internal defaults.")
+    else:
+        logger.debug("Config file(s) read from (in decreasing priority):\n{}\n"
+                     .format('\n'.join(CFG_LOCATIONS[::-1])))
+
+    jupyter_o2 = JupyterO2(**pargs)
 
     jupyter_o2.ask_for_pin()
     jupyter_o2.connect()
