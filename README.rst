@@ -55,4 +55,4 @@ Optional installs
 TODO
 ------------------------------
 * use logging to allow different levels of verbosity
-* make the user argument optional and move it into ``.jupyter-o2.cfg``
+* make the user argument optional and move it into ``jupyter-o2.cfg``
