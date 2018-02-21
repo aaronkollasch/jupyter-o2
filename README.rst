@@ -18,10 +18,14 @@ Next, install Jupyter-O2.
 
 Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``, where ``etc`` is located either in the
 environment root or the system-wide ``/etc`` directory.
-Edit this file according to its instructions, particularly ``MODULE_LOAD_CALL`` and ``SOURCE_JUPYTER_CALL``.
+Edit this file according to its instructions, particularly ``DEFAULT_USER``, ``MODULE_LOAD_CALL``,
+and ``SOURCE_JUPYTER_CALL``.
 
     Note: ``jupyter-o2.cfg`` should be installed upon setup.
     If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as ``.jupyter-o2.cfg``.
+
+    Update: If upgrading from version 0.1 to 0.2, add ``DEFAULT_USER = <user>`` to ``jupyter-o2.cfg``
+    under ``[Defaults]``, substituting your O2 login username for ``<user>``.
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see `jupyter_o2_tips.rst`_.
 
@@ -31,9 +35,9 @@ Usage
 ------------------------------
 .. code-block:: console
 
-    $ jupyter-o2 <USER> <subcommand>
+    $ jupyter-o2 <subcommand>
 
-Example: ``jupyter-o2 js123 notebook``
+Example: ``jupyter-o2 notebook``
 
     This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
     ssh into that interactive node to allow requests to be forwarded,
@@ -55,4 +59,3 @@ Optional installs
 TODO
 ------------------------------
 * use logging to allow different levels of verbosity
-* make the user argument optional and move it into ``jupyter-o2.cfg``

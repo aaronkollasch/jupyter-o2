@@ -23,6 +23,7 @@ from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 
 
 JO2_DEFAULTS = {
+    "DEFAULT_USER": "",
     "DEFAULT_HOST": "o2.hms.harvard.edu",
     "DEFAULT_JP_PORT": "8887",
     "DEFAULT_JP_TIME": "0-12:00",
@@ -49,6 +50,7 @@ if not config.read([
 ]):
     print("Config file could not be read. Using internal defaults.")
 
+DEFAULT_USER = config.get('Defaults', 'DEFAULT_USER')
 DEFAULT_HOST = config.get('Defaults', 'DEFAULT_HOST')
 DEFAULT_JP_PORT = config.getint('Defaults', 'DEFAULT_JP_PORT')
 DEFAULT_JP_TIME = config.get('Defaults', 'DEFAULT_JP_TIME')
@@ -60,8 +62,8 @@ MODULE_LOAD_CALL = config.get('Settings', 'MODULE_LOAD_CALL')
 SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
 
 JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2.')
-JO2_ARG_PARSER.add_argument("user", type=str, help="O2 username")
 JO2_ARG_PARSER.add_argument("subcommand", type=str, help="the subcommand to launch")
+JO2_ARG_PARSER.add_argument("-u", "--user", default=DEFAULT_USER, type=str, help="O2 username")
 JO2_ARG_PARSER.add_argument("--host", type=str, default=DEFAULT_HOST, help="Host to connect to")
 JO2_ARG_PARSER.add_argument("-p", "--port", dest="jp_port", type=int, default=DEFAULT_JP_PORT,
                             help="Available port on your system")
@@ -138,9 +140,9 @@ class FilteredOut(object):
 class JupyterO2(object):
     def __init__(
             self,
-            user,
-            subcommand=DEFAULT_JP_SUBCOMMAND,
+            user=DEFAULT_USER,
             host=DEFAULT_HOST,
+            subcommand=DEFAULT_JP_SUBCOMMAND,
             jp_port=DEFAULT_JP_PORT,
             jp_time=DEFAULT_JP_TIME,
             jp_mem=DEFAULT_JP_MEM,
