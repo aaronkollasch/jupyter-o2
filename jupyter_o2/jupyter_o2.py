@@ -45,7 +45,7 @@ if not config.read([
     os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),  # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),  # etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
-    CFG_FILENAME,  # jupyter-o2.cfg
+    CFG_FILENAME,  # ./jupyter-o2.cfg
 ]):
     print("Config file could not be read. Using internal defaults.")
 

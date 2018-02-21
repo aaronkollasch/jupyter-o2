@@ -44,9 +44,9 @@ For more info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
 Requirements and compatibility
 ------------------------------
 * python 2.7 or 3.6 (tested)
-* Pexpect
-* POSIX: Jupyter-O2 has been tested on MacOS. It may work on Linux and it would likely require
-  both Cygwin and a Cygwin version of Python to work on Windows (for Pexpect and SSH).
+* pexpect.pxssh
+* POSIX: Jupyter-O2 has been tested on MacOS. It may work on Linux, and on Windows it requires Cygwin and
+  Cygwin's version of Python.
 
 Optional installs
 ------------------------------
@@ -55,3 +55,4 @@ Optional installs
 TODO
 ------------------------------
 * use logging to allow different levels of verbosity
+* make the user argument optional and move it into ``.jupyter-o2.cfg``

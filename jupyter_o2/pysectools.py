@@ -68,7 +68,7 @@ class PinentryErrorException(PinentryException):
 
 
 class Pinentry(object):
-    def __init__(self, pinentry_path="pinentry", fallback_to_getpass=True):
+    def __init__(self, pinentry_path=PINENTRY_PATH, fallback_to_getpass=True):
         if not cmd_exists(pinentry_path):
             if fallback_to_getpass and os.isatty(sys.stdout.fileno()):
                 self._ask = self._ask_with_getpass
