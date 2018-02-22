@@ -53,8 +53,8 @@ Requirements and compatibility
 ------------------------------
 * python 2.7 or 3.6 (tested)
 * pexpect.pxssh
-* POSIX: Jupyter-O2 has been tested on MacOS. It may work on Linux, and on Windows it requires Cygwin and
-  Cygwin's version of Python.
+* POSIX: Jupyter-O2 has been tested on MacOS. It may work on Linux, and on Windows it should
+  require Cygwin and Cygwin's version of Python.
 
 Optional installs
 ------------------------------
