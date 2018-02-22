@@ -1,5 +1,5 @@
 ===========
-jupyter-o2
+Jupyter-O2
 ===========
 
 Jupyter-O2 is a command-line tool that automatically runs Jupyter on
@@ -17,8 +17,7 @@ Next, install Jupyter-O2.
     $ pip install jupyter-o2
 
 Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``.
-Run ``jupyter-o2 --paths`` to see where the .cfg file may be located
-and where it has been found.
+Run ``jupyter-o2 --paths`` to see possible and current locations.
 
     ``jupyter-o2.cfg`` should be installed upon setup.
     If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into any location in ``jupyter-o2 --paths``.
@@ -27,7 +26,7 @@ Edit ``jupyter-o2.cfg`` according to its instructions, particularly the ``DEFAUL
 and ``SOURCE_JUPYTER_CALL`` fields.
 
     Update: If upgrading from version 0.1 to 0.2, add ``DEFAULT_USER = <user>`` to ``jupyter-o2.cfg``
-    under ``[Defaults]``, substituting your O2 login username for ``<user>``.
+    under ``[Defaults]``, substituting your O2 username for ``<user>``.
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see `jupyter_o2_tips.rst`_.
 
@@ -41,13 +40,14 @@ Usage
 
 Example: ``jupyter-o2 notebook``
 
-If jupyter is also installed, jupyter-o2 can also be run as a jupyter subcommand, e.g. ``jupyter o2 notebook``.
+If Jupyter is installed on your machine,
+Jupyter-O2 can also be run as a Jupyter subcommand, e.g. ``jupyter o2 notebook``.
 
     This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
     ssh into that interactive node to allow requests to be forwarded,
     and finally open the notebook in your browser.
 
-For info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
+For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Requirements and compatibility
 ------------------------------
