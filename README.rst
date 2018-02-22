@@ -17,12 +17,11 @@ Next, install Jupyter-O2.
     $ pip install jupyter-o2
 
 Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``.
-
-    ``etc/`` should be located in the environment root, in ``/usr/local/etc/``, or the system-wide ``/etc/`` directory.
-    Run ``jupyter-o2 notebook -v`` to see where the .cfg file has been found.
+Run ``jupyter-o2 --paths`` to see where the .cfg file may be located
+and where it has been found.
 
     ``jupyter-o2.cfg`` should be installed upon setup.
-    If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into your home folder as ``.jupyter-o2.cfg``.
+    If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into any location in ``jupyter-o2 --paths``.
 
 Edit ``jupyter-o2.cfg`` according to its instructions, particularly the ``DEFAULT_USER``, ``MODULE_LOAD_CALL``,
 and ``SOURCE_JUPYTER_CALL`` fields.
@@ -42,11 +41,13 @@ Usage
 
 Example: ``jupyter-o2 notebook``
 
+If jupyter is also installed, jupyter-o2 can also be run as a jupyter subcommand, e.g. ``jupyter o2 notebook``.
+
     This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
     ssh into that interactive node to allow requests to be forwarded,
     and finally open the notebook in your browser.
 
-For more info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
+For info on the jupyter-o2 command-line options, use ``jupyter-o2 --help``.
 
 Requirements and compatibility
 ------------------------------

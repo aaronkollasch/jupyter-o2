@@ -42,13 +42,15 @@ config.add_section('Settings')
 CFG_FILENAME = "jupyter-o2.cfg"
 CFG_DIR = "jupyter-o2"
 
-CFG_LOCATIONS = config.read([
+CFG_SEARCH_LOCATIONS = [
     os.path.join("/etc", CFG_DIR, CFG_FILENAME),  # /etc/jupyter-o2/jupyter-o2.cfg
     os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),  # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),  # etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
     CFG_FILENAME,  # ./jupyter-o2.cfg
-])
+]
+
+CFG_LOCATIONS = config.read(CFG_SEARCH_LOCATIONS)
 
 DEFAULT_USER = config.get('Defaults', 'DEFAULT_USER')
 DEFAULT_HOST = config.get('Defaults', 'DEFAULT_HOST')
@@ -62,7 +64,7 @@ MODULE_LOAD_CALL = config.get('Settings', 'MODULE_LOAD_CALL')
 SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
 
 JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2.')
-JO2_ARG_PARSER.add_argument("subcommand", type=str, help="the subcommand to launch")
+JO2_ARG_PARSER.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
 JO2_ARG_PARSER.add_argument("-u", "--user", default=DEFAULT_USER, type=str, help="O2 username")
 JO2_ARG_PARSER.add_argument("--host", type=str, default=DEFAULT_HOST, help="Host to connect to")
 JO2_ARG_PARSER.add_argument("-p", "--port", dest="jp_port", type=int, default=DEFAULT_JP_PORT,
@@ -80,6 +82,7 @@ JO2_ARG_PARSER.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default
 JO2_ARG_PARSER.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False, action='store_true',
                             help="Enables trusted X11 forwarding. Equivalent to ssh -Y.")
 JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true')
+JO2_ARG_PARSER.add_argument('--paths', action='store_true')
 
 SRUN_CALL_FORMAT = "srun -t {} --mem {} -c {} --pty -p interactive --x11 /bin/bash"
 JP_CALL_FORMAT = "jupyter {} --port={} --browser='none'"
@@ -189,7 +192,9 @@ class JupyterO2(object):
         self.__o2_pass = self.__pinentry.ask(
             prompt="Enter your passphrase: ",
             description="Connect to O2 server for jupyter {}".format(self.subcommand),
-            error="No password entered", validator=lambda x: x is not None and len(x) > 0)
+            error="No password entered",
+            validator=lambda x: x is not None and len(x) > 0
+        )
         self.__pinentry.close()
 
     def connect(self):
@@ -348,6 +353,14 @@ class JupyterO2(object):
 def main():
     pargs = JO2_ARG_PARSER.parse_args()
     pargs = vars(pargs)
+
+    # print the paths where config files are located, in descending order of precedence
+    if pargs.pop('paths'):
+        print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
+        print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
+        sys.exit(0)
+    elif pargs['subcommand'] is None:
+        JO2_ARG_PARSER.error("the following arguments are required: subcommand")
 
     logging.basicConfig(level=logging.INFO, format="%(msg)s")
     if pargs.pop('verbose'):

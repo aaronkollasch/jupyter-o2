@@ -15,16 +15,18 @@ elif sys.platform == "darwin":
 else:
     PINENTRY_PATH = "pinentry"
 
+
 #################################################################
 # pin entry and security functions are slightly modified        #
-# from pysectools (Greg V <greg@unrelenting.technology>):       #
+# from pysectools (Greg V <greg@unrelenting.technology>),       #
+# which is free for distribution under the terms of the         #
+# Do What The Fuck You Want To Public License, Version 2,       #
+# as published by Sam Hocevar.                                  #
 #                                                               #
-# - updated pysectools for python 3:                            #
-#     uses bytestrings and flushes stdin after writing          #
-# - removed shell=True from subprocess call                     #
-# - moved cmd_exists to utils.py                                #
-# - moved cmd_exists back from utils.py                         #
-#     (since it came with pysectools                            #
+# - updated Pinentry for python 3:                              #
+#   - uses bytestrings                                          #
+#   - flushes stdin after writing                               #
+# - removed shell=True from subprocess.call()                   #
 #################################################################
 
 
