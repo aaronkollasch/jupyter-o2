@@ -6,7 +6,7 @@ import subprocess
 import ctypes
 import getpass  # fallback if pinentry is not installed (optional "brew install pinentry" on macs)
 
-from .utils import eprint
+from .utils import print, eprint
 
 if sys.platform.startswith("linux"):
     PINENTRY_PATH = "/usr/bin/pinentry"
@@ -27,6 +27,7 @@ else:
 #   - uses bytestrings                                          #
 #   - flushes stdin after writing                               #
 # - removed shell=True from subprocess.call()                   #
+# - uses a print function that accepts the flush parameter      #
 #################################################################
 
 

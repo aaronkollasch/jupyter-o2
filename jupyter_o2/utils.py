@@ -65,6 +65,23 @@ def check_dns(hostname, dns_groups=DNS_SERVER_GROUPS):
     return dns_err_code, hostname
 
 
+if sys.version_info[:2] < (3, 3):
+    old_print = print
+    def print(*args, **kwargs):
+        """
+        Compatibility print function for python 2.7,
+        where print() does not accept the flush parameter.
+        """
+        flush = kwargs.pop('flush', False)
+        old_print(*args, **kwargs)
+        if flush:
+            file = kwargs.get('file', sys.stdout)
+            # Why might file=None? IDK, but it works for print(i, file=None)
+            file.flush() if file is not None else sys.stdout.flush()
+else:
+    print = print
+
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
