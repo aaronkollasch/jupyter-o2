@@ -2,17 +2,17 @@
 Jupyter-O2 tips
 ===============
 
---------------------------------------------------------------------------------------------------
-Useful jupyter addons
---------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
+Useful Jupyter add-ons
+--------------------------------------------------------------------------------------------------------------------
+
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Kernels
+`Kernels <https://github.com/jupyter/jupyter/wiki/Jupyter-kernels>`__
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-There are `many kernels <https://github.com/jupyter/jupyter/wiki/Jupyter-kernels>`__
-available for Jupyter, allowing the user to write notebooks in their
-desired language.
+There are many kernels available for Jupyter, allowing the user to write
+notebooks in their desired language.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 `bash_kernel <https://pypi.python.org/pypi/bash_kernel>`__
@@ -50,15 +50,16 @@ For example, the connection could time out or the node could exceed its time lim
 `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-While JupyterLab is currently in beta, it offers a more complete
-environment than Jupyter Notebook, and it is now
+While JupyterLab is currently in beta, it is now
 `ready for users <https://blog.jupyter.org/jupyterlab-is-ready-for-users-5a6f039b8906>`__.
-With tabs for notebooks, terminals, consoles, and text editors, and an integrated file browser,
+
+JupyterLab offers a more complete environment than Jupyter Notebook.
+With tabs for notebooks, terminals, consoles, text editors, and an integrated file browser,
 you could run almost anything you need on O2 from a single browser window.
 
---------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
 Troubleshooting
---------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 nbsignatures.db
