@@ -81,8 +81,10 @@ JO2_ARG_PARSER.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default
                             help="Do not quit XQuartz")
 JO2_ARG_PARSER.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False, action='store_true',
                             help="Enables trusted X11 forwarding. Equivalent to ssh -Y.")
-JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true')
-JO2_ARG_PARSER.add_argument('--paths', action='store_true')
+JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true',
+                            help="Increase verbosity level.")
+JO2_ARG_PARSER.add_argument('--paths', action='store_true',
+                            help="Show configuration paths and exit.")
 
 SRUN_CALL_FORMAT = "srun -t {} --mem {} -c {} --pty -p interactive --x11 /bin/bash"
 JP_CALL_FORMAT = "jupyter {} --port={} --browser='none'"
@@ -362,7 +364,9 @@ def main():
         print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
         sys.exit(0)
     elif pargs['subcommand'] is None:
-        JO2_ARG_PARSER.error("the following arguments are required: subcommand")
+        # # removed error message:
+        # JO2_ARG_PARSER.error("the following arguments are required: subcommand")
+        pargs['subcommand'] = DEFAULT_JP_SUBCOMMAND
 
     # configure the logging level
     logging.basicConfig(level=logging.INFO, format="%(msg)s")

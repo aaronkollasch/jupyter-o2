@@ -36,7 +36,7 @@ Usage
 ------------------------------
 .. code-block:: console
 
-    $ jupyter-o2 <subcommand>
+    $ jupyter-o2 [subcommand]
 
 Example: ``jupyter-o2 notebook``
 

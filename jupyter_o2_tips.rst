@@ -51,9 +51,10 @@ For example, the connection could time out or the node could exceed its time lim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 While JupyterLab is currently in beta, it offers a more complete
-environment than Jupyter Notebook. With notebook and terminal tabs, a
-text editor, and a file browser, you could run everything you need on O2
-from a single browser window.
+environment than Jupyter Notebook, and it is now
+`ready for users <https://blog.jupyter.org/jupyterlab-is-ready-for-users-5a6f039b8906>`__.
+With tabs for notebooks, terminals, consoles, and text editors, and an integrated file browser,
+you could run almost anything you need on O2 from a single browser window.
 
 --------------------------------------------------------------------------------------------------
 Troubleshooting
