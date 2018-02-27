@@ -6,8 +6,6 @@ import subprocess
 import ctypes
 import getpass  # fallback if pinentry is not installed (optional "brew install pinentry" on macs)
 
-from .utils import print, eprint
-
 if sys.platform.startswith("linux"):
     PINENTRY_PATH = "/usr/bin/pinentry"
 elif sys.platform == "darwin":
@@ -104,11 +102,12 @@ class Pinentry(object):
     @staticmethod
     def _ask_with_getpass(prompt, description, error, validator):
         if description:
-            print(description, flush=True)
+            print(description, file=sys.stdout)
+            sys.stdout.flush()
         password = None
         while not validator(password):
             if password is not None:
-                eprint(error)
+                print(error, file=sys.stderr)
             password = getpass.getpass(prompt)
         return password
 

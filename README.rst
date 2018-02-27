@@ -51,11 +51,11 @@ For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Requirements and compatibility
 ------------------------------
-* python 2.7 or 3.6
+* python 2.7 and 3.6 have been tested.
 * pexpect.pxssh
 * POSIX: Jupyter-O2 has been tested on MacOS. It may work on Linux, and on Windows it should
   require Cygwin and Cygwin's version of Python.
 
 Optional installs
 ------------------------------
-* pinentry (a command line tool)
+* pinentry (a command line tool used instead of getpass)

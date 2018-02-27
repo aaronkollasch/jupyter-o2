@@ -19,7 +19,7 @@ except ImportError:
 
 from pexpect import pxssh
 
-from .utils import (eprint, join_cmd, check_dns, try_quit_xquartz)
+from .utils import (join_cmd, check_dns, try_quit_xquartz)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 
 
@@ -103,7 +103,8 @@ class CustomSSH(pxssh.pxssh):
         try:
             super(CustomSSH, self).login(*args, **kwargs)
         except pxssh.ExceptionPxssh as err:
-            eprint("pxssh error: {}".format(err))
+            logger = logging.getLogger(__name__)
+            logger.error("pxssh error: {}".format(err))
             sys.exit(1)
 
     def silence_logs(self):
