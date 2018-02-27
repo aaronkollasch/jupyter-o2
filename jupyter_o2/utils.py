@@ -79,6 +79,7 @@ if sys.version_info[:2] < (3, 3):
             # Why might file=None? IDK, but it works for print(i, file=None)
             file.flush() if file is not None else sys.stdout.flush()
 else:
+    old_print = print
     print = print
 
 
