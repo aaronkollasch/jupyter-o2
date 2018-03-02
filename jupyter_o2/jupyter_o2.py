@@ -7,6 +7,7 @@ import atexit
 from signal import signal, SIGABRT, SIGINT, SIGTERM
 import logging
 import webbrowser
+import json
 import argparse
 try:
     from ConfigParser import SafeConfigParser as ConfigParser
@@ -42,12 +43,12 @@ config.add_section('Settings')
 CFG_FILENAME = "jupyter-o2.cfg"
 CFG_DIR = "jupyter-o2"
 
-CFG_SEARCH_LOCATIONS = [
-    os.path.join("/etc", CFG_DIR, CFG_FILENAME),  # /etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),  # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),  # etc/jupyter-o2/jupyter-o2.cfg
+CFG_SEARCH_LOCATIONS = [                                        # In order of increasing priority:
+    os.path.join("/etc", CFG_DIR, CFG_FILENAME),                # /etc/jupyter-o2/jupyter-o2.cfg
+    os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),      # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
+    os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),     # etc/jupyter-o2/jupyter-o2.cfg
     os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
-    CFG_FILENAME,  # ./jupyter-o2.cfg
+    CFG_FILENAME,                                               # ./jupyter-o2.cfg
 ]
 
 CFG_LOCATIONS = config.read(CFG_SEARCH_LOCATIONS)
@@ -208,10 +209,10 @@ class JupyterO2(object):
         """
         # start login ssh
         self.logger.info("Connecting to {}@{}".format(self.user, self.host))
-        self.logger.debug("SEND: ssh {}@{}".format(self.user, self.host))
+        self.logger.debug("RUN: ssh {}@{}".format(self.user, self.host))
         dns_err, host = check_dns(self.host)
         if dns_err == 1:
-            self.logger.debug("SEND: ssh {}@{}".format(self.user, host))
+            self.logger.debug("RUN: ssh {}@{}".format(self.user, host))
         elif dns_err == 2:
             self.logger.critical("Unable to resolve host.")
             sys.exit(1)
@@ -276,10 +277,10 @@ class JupyterO2(object):
 
         # log in to the second ssh
         self.logger.info("\nStarting a second connection to the login node.")
-        self.logger.debug("ssh {}@{}".format(self.user, jp_login_host))
+        self.logger.debug("RUN: ssh {}@{}".format(self.user, jp_login_host))
         dns_err, jp_login_host = check_dns(jp_login_host)
         if dns_err == 1:
-            self.logger.debug("ssh {}@{}".format(self.user, jp_login_host))
+            self.logger.debug("RUN: ssh {}@{}".format(self.user, jp_login_host))
         elif dns_err == 2:
             self.logger.critical("Unable to resolve host.")
             sys.exit(1)
@@ -289,7 +290,7 @@ class JupyterO2(object):
 
         # ssh into the running interactive node
         self.logger.info("Connecting to the interactive node.")
-        self.logger.debug("ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
+        self.logger.debug("SEND: ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
         self._second_ssh.PROMPT = PASSWORD_PATTERN
         self._second_ssh.sendline("ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
         if not self._second_ssh.prompt():
@@ -358,29 +359,33 @@ def main():
     pargs = JO2_ARG_PARSER.parse_args()
     pargs = vars(pargs)
 
+    # configure the logging level
+    logging.basicConfig(level=logging.INFO, format="%(msg)s")
+    if pargs.pop('verbose'):
+        logging.getLogger().setLevel(logging.DEBUG)  # set root logger level
+
+    logger = logging.getLogger(__name__)
+
     # print the paths where config files are located, in descending order of precedence
     if pargs.pop('paths'):
         print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
         print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
         sys.exit(0)
-    elif pargs['subcommand'] is None:
-        # # removed error message:
-        # JO2_ARG_PARSER.error("the following arguments are required: subcommand")
-        pargs['subcommand'] = DEFAULT_JP_SUBCOMMAND
 
-    # configure the logging level
-    logging.basicConfig(level=logging.INFO, format="%(msg)s")
-    if pargs.pop('verbose'):
-        logging.getLogger().setLevel(logging.DEBUG)
-
-    logger = logging.getLogger(__name__)
     if not CFG_LOCATIONS:
         logger.warning("Config file could not be read. Using internal defaults.")
     else:
         logger.debug("Config file(s) read from (in decreasing priority):\n{}\n"
                      .format('\n'.join(CFG_LOCATIONS[::-1])))
 
+    if pargs['subcommand'] is None:
+        # # removed error message so that program will use the default subcommand
+        # JO2_ARG_PARSER.error("the following arguments are required: subcommand")
+        logger.warning("Jupyter subcommand not provided. Using default: {}".format(DEFAULT_JP_SUBCOMMAND))
+        pargs['subcommand'] = DEFAULT_JP_SUBCOMMAND
+
     # start Jupyter-O2
+    logger.debug("Running Jupyter-O2 with options:\n{}".format(json.dumps(pargs, indent=2)))
     jupyter_o2_runner = JupyterO2(**pargs)
     jupyter_o2_runner.ask_for_pin()
     jupyter_o2_runner.connect()

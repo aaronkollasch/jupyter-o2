@@ -28,9 +28,9 @@ and ``SOURCE_JUPYTER_CALL`` fields.
     Update: If upgrading from version 0.1 to 0.2, add ``DEFAULT_USER = <user>`` to ``jupyter-o2.cfg``
     under ``[Defaults]``, substituting your O2 username for ``<user>``.
 
-For more info on setting up Jupyter and troubleshooting Jupyter-O2, see `jupyter_o2_tips.rst`_.
+For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
 
-.. _jupyter_o2_tips.rst: https://github.com/AaronKollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
+.. _jupyter-o2 tips: https://github.com/AaronKollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
 
 Usage
 ------------------------------
