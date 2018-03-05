@@ -9,6 +9,7 @@ try:
     from shlex import quote
 except ImportError:
     from pipes import quote
+import socket
 
 try:
     import dns.resolver
@@ -39,7 +40,10 @@ else:
 
 
 def check_dns(hostname, dns_groups=DNS_SERVER_GROUPS):
-    """Check if hostname is reachable by any group of dns servers."""
+    """Check if hostname is reachable by any group of dns servers.
+
+    :return: tuple of (dns error code, hostname)
+    """
     if dns is not None:
         dns_err_code = 0
         for dns_servers in dns_groups:
@@ -63,6 +67,21 @@ def check_dns(hostname, dns_groups=DNS_SERVER_GROUPS):
     elif dns_err_code == 2:
         eprint("No IP found for {}".format(hostname))
     return dns_err_code, hostname
+
+
+def check_port_occupied(port, address="127.0.0.1"):
+    """Check if a port is occupied by attempting to bind the socket and returning any resulting error.
+
+    :return: socket.error if the port is in use, otherwise False
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind((address, port))
+    except socket.error as e:
+        return e
+    finally:
+        s.close()
+    return False
 
 
 if sys.version_info[:2] < (3, 3):

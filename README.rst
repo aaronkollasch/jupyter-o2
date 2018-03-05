@@ -19,14 +19,8 @@ Next, install Jupyter-O2.
 Then, find the ``jupyter-o2.cfg`` file in ``etc/jupyter-o2``.
 Run ``jupyter-o2 --paths`` to see possible and current locations.
 
-    ``jupyter-o2.cfg`` should be installed upon setup.
-    If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into any location in ``jupyter-o2 --paths``.
-
-Edit ``jupyter-o2.cfg`` according to its instructions, particularly the ``DEFAULT_USER``, ``MODULE_LOAD_CALL``,
-and ``SOURCE_JUPYTER_CALL`` fields.
-
-    Update: If upgrading from version 0.1 to 0.2, add ``DEFAULT_USER = <user>`` to ``jupyter-o2.cfg``
-    under ``[Defaults]``, substituting your O2 username for ``<user>``.
+Edit ``jupyter-o2.cfg`` according to its instructions, particularly the
+``DEFAULT_USER``, ``MODULE_LOAD_CALL``, and ``SOURCE_JUPYTER_CALL`` fields.
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
 
@@ -42,10 +36,6 @@ Example: ``jupyter-o2 notebook``
 
 If Jupyter is installed on your machine,
 Jupyter-O2 can also be run as a Jupyter subcommand, e.g. ``jupyter o2 notebook``.
-
-    This will launch an X11-enabled ssh, start an interactive node running jupyter notebook,
-    ssh into that interactive node to allow requests to be forwarded,
-    and finally open the notebook in your browser.
 
 For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 

@@ -61,6 +61,17 @@ you could run almost anything you need on O2 from a single browser window.
 Troubleshooting
 --------------------------------------------------------------------------------------------------------------------
 
+^^^
+jupyter-o2.cfg
+^^^
+
+``jupyter-o2.cfg`` should be installed upon setup.
+If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into any location in ``jupyter-o2 --paths``.
+
+If upgrading from version 0.1.x to 0.2.x, add ``DEFAULT_USER = <user>`` to ``jupyter-o2.cfg``
+under ``[Defaults]``, substituting your O2 username for ``<user>``.
+
+
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 nbsignatures.db
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

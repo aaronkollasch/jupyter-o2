@@ -20,7 +20,7 @@ except ImportError:
 
 from pexpect import pxssh
 
-from .utils import (join_cmd, check_dns, try_quit_xquartz)
+from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 
 
@@ -34,6 +34,8 @@ JO2_DEFAULTS = {
     "DEFAULT_JP_SUBCOMMAND": "notebook",
     "MODULE_LOAD_CALL": "",
     "SOURCE_JUPYTER_CALL": "",
+    "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --browser='none'",
+    "PORT_RETRIES": "10",
 }
 
 config = ConfigParser(defaults=JO2_DEFAULTS)
@@ -61,8 +63,11 @@ DEFAULT_JP_MEM = config.get('Defaults', 'DEFAULT_JP_MEM')
 DEFAULT_JP_CORES = config.getint('Defaults', 'DEFAULT_JP_CORES')
 DEFAULT_JP_SUBCOMMAND = config.get('Defaults', 'DEFAULT_JP_SUBCOMMAND')
 
+SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash"
 MODULE_LOAD_CALL = config.get('Settings', 'MODULE_LOAD_CALL')
 SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
+JP_CALL_FORMAT = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
+PORT_RETRIES = config.get('Settings', 'PORT_RETRIES')
 
 JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2.')
 JO2_ARG_PARSER.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
@@ -87,14 +92,11 @@ JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true',
 JO2_ARG_PARSER.add_argument('--paths', action='store_true',
                             help="Show configuration paths and exit.")
 
-SRUN_CALL_FORMAT = "srun -t {} --mem {} -c {} --pty -p interactive --x11 /bin/bash"
-JP_CALL_FORMAT = "jupyter {} --port={} --browser='none'"
-
 # patterns to search for in ssh
 SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{}[\w\-./%?=]+)\s"  # {} formatted with jupyter port
 PASSWORD_PATTERN = re.compile(b"[\w-]+@[\w-]+'s password: ")  # e.g. "user@compute-e-16-175's password: "
 
-if sys.version_info.major >= 3:
+if hasattr(sys.stdout, 'buffer'):
     STDOUT_BUFFER = sys.stdout.buffer
 else:
     STDOUT_BUFFER = sys.stdout
@@ -152,6 +154,7 @@ class JupyterO2(object):
             host=DEFAULT_HOST,
             subcommand=DEFAULT_JP_SUBCOMMAND,
             jp_port=DEFAULT_JP_PORT,
+            port_retries=PORT_RETRIES,
             jp_time=DEFAULT_JP_TIME,
             jp_mem=DEFAULT_JP_MEM,
             jp_cores=DEFAULT_JP_CORES,
@@ -159,20 +162,42 @@ class JupyterO2(object):
             keepxquartz=False,
             forwardx11trusted=False,
     ):
+        self.logger = logging.getLogger(__name__)
+
         self.user = user
         self.host = host
         self.subcommand = subcommand
-        self.jp_port = jp_port
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
 
-        self.srun_call = SRUN_CALL_FORMAT.format(quote(jp_time), quote(jp_mem), jp_cores)
-        self.jp_call = JP_CALL_FORMAT.format(quote(subcommand), jp_port)
+        # find an open port starting with the supplied port
+        success = False
+        for port in range(jp_port, jp_port + port_retries + 1):
+            port_occupied = check_port_occupied(port)
+            if port_occupied:
+                self.logger.debug("Port {0} is not available, error {1}: {2}".format(
+                    port, port_occupied.errno, port_occupied.strerror))
+            else:
+                self.logger.debug("Port {} is available, using for Jupyter-O2.".format(port))
+                self.jp_port = port
+                success = True
+                break
+        if not success:
+            self.logger.error("Port {0} and the next {1} ports are already occupied.".format(jp_port, port_retries))
+
+        self.srun_call = SRUN_CALL_FORMAT.format(
+            time=quote(jp_time),
+            mem=quote(jp_mem),
+            cores=jp_cores
+        )
+
+        self.jp_call = JP_CALL_FORMAT.format(
+            subcommand=quote(subcommand),
+            port=self.jp_port
+        )
 
         self.__o2_pass = ""
         self._pinentry = Pinentry(pinentry_path=PINENTRY_PATH, fallback_to_getpass=True)
-
-        self.logger = logging.getLogger(__name__)
 
         login_ssh_options = {
             "ForwardX11": "yes",
@@ -202,10 +227,13 @@ class JupyterO2(object):
         self._pinentry.close()
 
     def connect(self):
-        """
+        """Connect to Jupyter
+
         First SSH into an interactive node and run jupyter.
         Then SSH into that node to set up forwarding.
         Finally, open the jupyter notebook page in the browser.
+
+        :return: True if connection is successful
         """
         # start login ssh
         self.logger.info("Connecting to {}@{}".format(self.user, self.host))
@@ -287,6 +315,7 @@ class JupyterO2(object):
         self._second_ssh.force_password = True
         self._second_ssh.silence_logs()
         self._second_ssh.login(jp_login_host, self.user, self.__o2_pass)
+        self.logger.info("Connected.")
 
         # ssh into the running interactive node
         self.logger.info("Connecting to the interactive node.")
@@ -313,6 +342,8 @@ class JupyterO2(object):
         # quit XQuartz because the application is not necessary to keep the connection open.
         if not self.keep_xquartz:
             try_quit_xquartz()
+
+        return True
 
     def interact(self):
         """Keep the ssh session alive and allow input such as Ctrl-C to close Jupyter."""
