@@ -67,7 +67,7 @@ SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive -
 MODULE_LOAD_CALL = config.get('Settings', 'MODULE_LOAD_CALL')
 SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
 JP_CALL_FORMAT = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
-PORT_RETRIES = config.get('Settings', 'PORT_RETRIES')
+PORT_RETRIES = config.getint('Settings', 'PORT_RETRIES')
 
 JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2.')
 JO2_ARG_PARSER.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
