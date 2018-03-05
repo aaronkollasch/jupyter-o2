@@ -103,12 +103,23 @@ else:
 
 
 class CustomSSH(pxssh.pxssh):
-    def login(self, *args, **kwargs):
-        """Login and suppress the traceback for pxssh exceptions (such as incorrect password errors)."""
+    def login(self, server, username, password='', *args, **kwargs):
+        """Login to an SSH server while checking the DNS, silencing logs,
+        and suppressing the traceback for pxssh exceptions (such as incorrect password errors).
+        """
+        logger = logging.getLogger(__name__)
         try:
-            super(CustomSSH, self).login(*args, **kwargs)
+            logger.debug("RUN: ssh {}@{}".format(username, server))
+            dns_err, host = check_dns(server)
+            if dns_err == 1:
+                logger.debug("RUN: ssh {}@{}".format(username, host))
+            elif dns_err == 2:
+                logger.critical("Unable to resolve server.")
+                sys.exit(1)
+            self.force_password = True
+            self.silence_logs()
+            super(CustomSSH, self).login(host, username, password, *args, **kwargs)
         except pxssh.ExceptionPxssh as err:
-            logger = logging.getLogger(__name__)
             logger.error("pxssh error: {}".format(err))
             sys.exit(1)
 
@@ -117,6 +128,15 @@ class CustomSSH(pxssh.pxssh):
         self.logfile = None
         self.logfile_read = None
         self.logfile_send = None
+
+    def sendlineprompt(self, s='', timeout=-1):
+        """
+        Send a line with sendline(s) and then prompt() once.
+        Returns output of sendline(), output of prompt()
+        """
+        value = self.sendline(s)
+        prompt = self.prompt(timeout)
+        return value, prompt
 
     def digest_all_prompts(self, timeout=0.5):
         """Digest all prompts until there is a delay of <timeout>."""
@@ -237,21 +257,11 @@ class JupyterO2(object):
         """
         # start login ssh
         self.logger.info("Connecting to {}@{}".format(self.user, self.host))
-        self.logger.debug("RUN: ssh {}@{}".format(self.user, self.host))
-        dns_err, host = check_dns(self.host)
-        if dns_err == 1:
-            self.logger.debug("RUN: ssh {}@{}".format(self.user, host))
-        elif dns_err == 2:
-            self.logger.critical("Unable to resolve host.")
-            sys.exit(1)
-        self._login_ssh.force_password = True
-        self._login_ssh.silence_logs()
-        self._login_ssh.login(host, self.user, self.__o2_pass)
+        self._login_ssh.login(self.host, self.user, self.__o2_pass)
         self.logger.info("Connected.")
 
         # get the login hostname
-        self._login_ssh.sendline("hostname")
-        self._login_ssh.prompt()
+        self._login_ssh.sendlineprompt("hostname")
         jp_login_host = self._login_ssh.before.decode('utf-8').strip().split('\n')[1]
         self.logger.info("Hostname: {}\n".format(jp_login_host))
 
@@ -259,8 +269,7 @@ class JupyterO2(object):
         self.logger.info("Starting an interactive session.")
         self._login_ssh.PROMPT = PASSWORD_PATTERN
         self._login_ssh.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun')
-        self._login_ssh.sendline(self.srun_call)
-        if not self._login_ssh.prompt():
+        if not self._login_ssh.sendlineprompt(self.srun_call)[1]:
             self.logger.critical("The timeout ({}) was reached without receiving a password request."
                                  .format(self._login_ssh.timeout))
             sys.exit(1)
@@ -269,10 +278,8 @@ class JupyterO2(object):
 
         # within interactive: get the name of the interactive node
         self._login_ssh.PROMPT = self._login_ssh.UNIQUE_PROMPT
-        self._login_ssh.sendline("unset PROMPT_COMMAND; PS1='[PEXPECT]\$ '")
-        self._login_ssh.prompt()
-        self._login_ssh.sendline("hostname | sed 's/\..*//'")
-        self._login_ssh.prompt()
+        self._login_ssh.sendlineprompt("unset PROMPT_COMMAND; PS1='[PEXPECT]\$ '")
+        self._login_ssh.sendlineprompt("hostname | sed 's/\..*//'")
         jp_interactive_host = self._login_ssh.before.decode('utf-8').strip().split('\n')[1]
         self.logger.info("Interactive session started.")
         self.logger.info("Node: {}\n".format(jp_interactive_host))
@@ -281,12 +288,10 @@ class JupyterO2(object):
         self.logger.info("Starting Jupyter {}.".format(self.subcommand))
         if MODULE_LOAD_CALL:
             self.logger.debug("SEND: {}".format(join_cmd("module load", MODULE_LOAD_CALL)))
-            self._login_ssh.sendline(join_cmd("module load", MODULE_LOAD_CALL))
-            self._login_ssh.prompt()
+            self._login_ssh.sendlineprompt(join_cmd("module load", MODULE_LOAD_CALL))
         if SOURCE_JUPYTER_CALL:
             self.logger.debug("SEND: {}".format(join_cmd("source", SOURCE_JUPYTER_CALL)))
-            self._login_ssh.sendline(join_cmd("source", SOURCE_JUPYTER_CALL))
-            self._login_ssh.prompt()
+            self._login_ssh.sendlineprompt(join_cmd("source", SOURCE_JUPYTER_CALL))
         self._login_ssh.sendline(self.jp_call)
         self._login_ssh.logfile_read = STDOUT_BUFFER
 
@@ -305,15 +310,6 @@ class JupyterO2(object):
 
         # log in to the second ssh
         self.logger.info("\nStarting a second connection to the login node.")
-        self.logger.debug("RUN: ssh {}@{}".format(self.user, jp_login_host))
-        dns_err, jp_login_host = check_dns(jp_login_host)
-        if dns_err == 1:
-            self.logger.debug("RUN: ssh {}@{}".format(self.user, jp_login_host))
-        elif dns_err == 2:
-            self.logger.critical("Unable to resolve host.")
-            sys.exit(1)
-        self._second_ssh.force_password = True
-        self._second_ssh.silence_logs()
         self._second_ssh.login(jp_login_host, self.user, self.__o2_pass)
         self.logger.info("Connected.")
 
@@ -321,8 +317,9 @@ class JupyterO2(object):
         self.logger.info("Connecting to the interactive node.")
         self.logger.debug("SEND: ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
         self._second_ssh.PROMPT = PASSWORD_PATTERN
-        self._second_ssh.sendline("ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host))
-        if not self._second_ssh.prompt():
+        if not self._second_ssh.sendlineprompt(
+                "ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host)
+        )[1]:
             self.logger.critical("The timeout ({}) was reached.".format(self._second_ssh.timeout))
             sys.exit(1)
         self._second_ssh.silence_logs()
