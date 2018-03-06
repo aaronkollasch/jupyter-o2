@@ -32,7 +32,8 @@ Usage
 
     $ jupyter-o2 [subcommand]
 
-Example: ``jupyter-o2 notebook``
+Examples: ``jupyter-o2 notebook`` or ``jupyter-o2 lab``
+(try it with `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__!)
 
 If Jupyter is installed on your machine,
 Jupyter-O2 can also be run as a Jupyter subcommand, e.g. ``jupyter o2 notebook``.
