@@ -131,12 +131,22 @@ class CustomSSH(pxssh.pxssh):
         self.logfile_read = None
         self.logfile_send = None
 
-    def sendlineprompt(self, s='', timeout=-1):
+    def sendline(self, s='', silence=True):
+        if not silence:
+            logger = logging.getLogger(__name__)
+            logger.debug("SEND: {}".format(s))
+        return super(CustomSSH, self).sendline(s)
+
+    def sendlineprompt(self, s='', timeout=-1, silence=True):
         """
-        Send a line with sendline(s) and then prompt() once.
+        Send s with sendline and then prompt() once.
         Returns output of sendline(), output of prompt()
+
+        :param s: the string to send
+        :param timeout: number of seconds to wait for prompt; use default if -1
+        :param silence: silence printing of s to debug log
         """
-        value = self.sendline(s)
+        value = self.sendline(s, silence)
         prompt = self.prompt(timeout)
         return value, prompt
 
@@ -272,12 +282,12 @@ class JupyterO2(object):
         self.logger.info("Starting an interactive session.")
         self._login_ssh.PROMPT = PASSWORD_REQUEST_PATTERN
         self._login_ssh.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun')
-        if not self._login_ssh.sendlineprompt(self.srun_call)[1]:
+        if not self._login_ssh.sendlineprompt(self.srun_call, silence=False)[1]:
             self.logger.error("The timeout ({}) was reached without receiving a password request."
-                                 .format(self._login_ssh.timeout))
+                              .format(self._login_ssh.timeout))
             return False
         self._login_ssh.silence_logs()
-        self._login_ssh.sendline(self.__o2_pass)
+        self._login_ssh.sendline(self.__o2_pass, silence=True)
 
         # within interactive session: get the name of the interactive node
         self._login_ssh.PROMPT = self._login_ssh.UNIQUE_PROMPT
@@ -290,15 +300,10 @@ class JupyterO2(object):
         # start jupyter
         self.logger.info("Starting Jupyter {}.".format(self.subcommand))
         if MODULE_LOAD_CALL:
-            module_load_call = join_cmd("module load", MODULE_LOAD_CALL)
-            self.logger.debug("SEND: {}".format(module_load_call))
-            self._login_ssh.sendlineprompt(module_load_call)
+            self._login_ssh.sendlineprompt(join_cmd("module load", MODULE_LOAD_CALL), silence=False)
         if SOURCE_JUPYTER_CALL:
-            source_jupyter_call = join_cmd("source", SOURCE_JUPYTER_CALL)
-            self.logger.debug("SEND: {}".format(source_jupyter_call))
-            self._login_ssh.sendlineprompt(source_jupyter_call)
-        self.logger.debug("SEND: {}".format(self.jp_call))
-        self._login_ssh.sendline(self.jp_call)
+            self._login_ssh.sendlineprompt(join_cmd("source", SOURCE_JUPYTER_CALL), silence=False)
+        self._login_ssh.sendline(self.jp_call, silence=False)
         self._login_ssh.logfile_read = STDOUT_BUFFER
 
         # get the address jupyter is running at
@@ -319,13 +324,12 @@ class JupyterO2(object):
         # ssh into the running interactive node
         self.logger.info("Connecting to the interactive node.")
         jp_interactive_command = "ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, jp_interactive_host)
-        self.logger.debug("SEND: {}".format(jp_interactive_command))
         self._second_ssh.PROMPT = PASSWORD_REQUEST_PATTERN
-        if not self._second_ssh.sendlineprompt(jp_interactive_command)[1]:
+        if not self._second_ssh.sendlineprompt(jp_interactive_command, silence=False)[1]:
             self.logger.error("The timeout ({}) was reached.".format(self._second_ssh.timeout))
             return False
         self._second_ssh.silence_logs()
-        self._second_ssh.sendline(self.__o2_pass)
+        self._second_ssh.sendline(self.__o2_pass, silence=True)
         zero(self.__o2_pass)  # password is not needed anymore
         self.__o2_pass = None
         self._second_ssh.logfile_read = STDOUT_BUFFER  # print any errors/output from self.__second_ssh to stdout
