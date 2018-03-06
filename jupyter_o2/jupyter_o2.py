@@ -179,6 +179,14 @@ class FilteredOut(object):
         return bytestr
 
 
+class JupyterO2Exception(Exception):
+    pass
+
+
+class JupyterO2Error(JupyterO2Exception):
+    pass
+
+
 class JupyterO2(object):
     def __init__(
             self,
@@ -216,6 +224,7 @@ class JupyterO2(object):
                 break
         if not success:
             self.logger.error("Port {0} and the next {1} ports are already occupied.".format(jp_port, port_retries))
+            raise JupyterO2Error("Could not find an available port.")
 
         self.srun_call = SRUN_CALL_FORMAT.format(
             time=quote(jp_time),
@@ -249,7 +258,19 @@ class JupyterO2(object):
         for sig in (SIGABRT, SIGINT, SIGTERM):
             signal(sig, self.term)
 
+    def run(self):
+        """
+        Run the standard JupyterO2 sequence
+        """
+        self.ask_for_pin()
+        if self.connect() or self.keep_alive:
+            self.logger.info("Starting pexpect interactive mode.")
+            self.interact()
+
     def ask_for_pin(self):
+        """
+        Prompt for an O2 password
+        """
         self.__o2_pass = self._pinentry.ask(
             prompt="Enter your passphrase: ",
             description="Connect to O2 server for jupyter {}".format(self.subcommand),
@@ -427,8 +448,8 @@ def main():
 
     # start Jupyter-O2
     logger.debug("Running Jupyter-O2 with options:\n{}\n".format(json.dumps(pargs, indent=2)))
-    jupyter_o2_runner = JupyterO2(**pargs)
-    jupyter_o2_runner.ask_for_pin()
-    if jupyter_o2_runner.connect() or jupyter_o2_runner.keep_alive:
-        logger.info("Starting pexpect interactive mode.")
-        jupyter_o2_runner.interact()
+    try:
+        jupyter_o2_runner = JupyterO2(**pargs)
+        jupyter_o2_runner.run()
+    except JupyterO2Exception as err:
+        logger.error("{}: {}".format(err.__class__.__name__, err))
