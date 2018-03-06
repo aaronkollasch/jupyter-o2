@@ -283,8 +283,9 @@ class JupyterO2(object):
         self._login_ssh.PROMPT = PASSWORD_REQUEST_PATTERN
         self._login_ssh.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun')
         if not self._login_ssh.sendlineprompt(self.srun_call, silence=False)[1]:
-            self.logger.error("The timeout ({}) was reached without receiving a password request."
-                              .format(self._login_ssh.timeout))
+            self.logger.error(
+                "The timeout ({}) was reached without receiving a password request."
+                .format(self._login_ssh.timeout))
             return False
         self._login_ssh.silence_logs()
         self._login_ssh.sendline(self.__o2_pass, silence=True)
@@ -358,7 +359,7 @@ class JupyterO2(object):
             interact_filter = FilteredOut(None, b'[PEXPECT]$ ')
             self._login_ssh.interact(output_filter=interact_filter.exit_on_find)
 
-    def close(self, cprint=print, *_):
+    def close(self, cprint=print, *__):
         """
         Close JupyterO2.
         :param cprint: allows printing to be disabled if necessary using `cprint=lambda x, end=None, flush=None: None`
@@ -377,7 +378,7 @@ class JupyterO2(object):
             _cprint("Closing second_ssh\n", end="", flush=True)
             self._second_ssh.close(force=True)
 
-    def term(self, *_):
+    def term(self, *__):
         """
         Terminate JupyterO2 and exit.
         """
