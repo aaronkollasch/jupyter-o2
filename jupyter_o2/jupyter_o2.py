@@ -150,6 +150,15 @@ class CustomSSH(pxssh.pxssh):
         prompt = self.prompt(timeout)
         return value, prompt
 
+    def sendpass(self, password):
+        """
+        Silence all logfiles and send password as a line.
+
+        TODO: scrub the password from pxssh variables like .before and .after
+        """
+        self.silence_logs()
+        return self.sendline(password, silence=True)
+
     def digest_all_prompts(self, timeout=0.5):
         """Digest all prompts until there is a delay of <timeout>."""
         if timeout == -1:
@@ -308,8 +317,7 @@ class JupyterO2(object):
                 "The timeout ({}) was reached without receiving a password request."
                 .format(self._login_ssh.timeout))
             return False
-        self._login_ssh.silence_logs()
-        self._login_ssh.sendline(self.__o2_pass, silence=True)
+        self._login_ssh.sendpass(self.__o2_pass)
 
         # within interactive session: get the name of the interactive node
         self._login_ssh.PROMPT = self._login_ssh.UNIQUE_PROMPT
@@ -320,6 +328,8 @@ class JupyterO2(object):
         self.logger.info("Node: {}\n".format(jp_interactive_host))
 
         # start jupyter
+        # TODO provide feedback if commands fail
+        # TODO add more flexibility in providing commands
         self.logger.info("Starting Jupyter {}.".format(self.subcommand))
         if MODULE_LOAD_CALL:
             self._login_ssh.sendlineprompt(join_cmd("module load", MODULE_LOAD_CALL), silence=False)
@@ -350,8 +360,7 @@ class JupyterO2(object):
         if not self._second_ssh.sendlineprompt(jp_interactive_command, silence=False)[1]:
             self.logger.error("The timeout ({}) was reached.".format(self._second_ssh.timeout))
             return False
-        self._second_ssh.silence_logs()
-        self._second_ssh.sendline(self.__o2_pass, silence=True)
+        self._second_ssh.sendpass(self.__o2_pass)
         zero(self.__o2_pass)  # password is not needed anymore
         self.__o2_pass = None
         self._second_ssh.logfile_read = STDOUT_BUFFER  # print any errors/output from self.__second_ssh to stdout
@@ -432,7 +441,7 @@ def main():
     if pargs.pop('paths'):
         print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
         print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
-        sys.exit(0)
+        return 0
 
     if not CFG_LOCATIONS:
         logger.warning("Config file could not be read. Using internal defaults.")
@@ -453,3 +462,4 @@ def main():
         jupyter_o2_runner.run()
     except JupyterO2Exception as err:
         logger.error("{}: {}".format(err.__class__.__name__, err))
+        return 1

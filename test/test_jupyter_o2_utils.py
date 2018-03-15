@@ -12,18 +12,17 @@ class TestUtils(unittest.TestCase):
             "Could not find O2 in DNS."
         )
 
-    def test_check_port_occupied(self):
+    def test_check_port_occupied_rejects_occupied(self):
         self.assertIsInstance(check_port_occupied(22), Exception)
-        self.assertFalse(check_port_occupied(52138), "Port 52138 is occupied.")
+
+    def test_check_port_occupied_accepts_unoccupied(self):
+        self.assertFalse(check_port_occupied(52138), "Port 52138 is occupied, perhaps just by coincidence.")
 
     def test_print(self):
         self.assertIsNone(print("", flush=True, end=""))
 
-    def test_join_cmd(self):
-        self.assertEqual(
-            join_cmd('ls', '-a; rm -rf /'),
-            "ls '-a;' rm -rf /"
-        )
+    def test_join_cmd_rejects_semicolon(self):
+        self.assertEqual(join_cmd('ls', '-a; rm -rf /'), "ls '-a;' rm -rf /")
 
     def test_try_quit_xquartz(self):
         self.assertIsNone(try_quit_xquartz())

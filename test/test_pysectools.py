@@ -27,4 +27,3 @@ class TestPysectools(unittest.TestCase):
             lambda x: x is not None
         )
         self.assertEqual(out, "password")
-
