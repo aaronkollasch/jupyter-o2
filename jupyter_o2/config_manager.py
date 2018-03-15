@@ -55,7 +55,7 @@ def generate_config(config_dir=None):
     resource_path = '/'.join((CFG_FILENAME,))
 
     # os.makedirs(config_dir, exist_ok=True)
-    try:  # py2.7-compatible version
+    try:  # py27-compatible version
         os.makedirs(config_dir)
     except OSError as e:
         if e.errno != EEXIST:

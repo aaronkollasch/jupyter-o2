@@ -16,6 +16,7 @@ except ImportError:
 
 from pexpect import pxssh
 
+from .version import __version__
 from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 from .config_manager import (config, CFG_SEARCH_LOCATIONS, CFG_LOCATIONS, generate_config)
@@ -34,30 +35,32 @@ SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
 JP_CALL_FORMAT = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
 PORT_RETRIES = config.getint('Settings', 'PORT_RETRIES')
 
-JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2.')
+JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
 JO2_ARG_PARSER.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
-JO2_ARG_PARSER.add_argument("-u", "--user", default=DEFAULT_USER, type=str, help="O2 username")
-JO2_ARG_PARSER.add_argument("--host", type=str, default=DEFAULT_HOST, help="Host to connect to")
-JO2_ARG_PARSER.add_argument("-p", "--port", dest="jp_port", type=int, default=DEFAULT_JP_PORT,
-                            help="Available port on your system")
-JO2_ARG_PARSER.add_argument("-t", "--time", dest="jp_time", type=str, default=DEFAULT_JP_TIME,
-                            help="Time to run Jupyter")
-JO2_ARG_PARSER.add_argument("-m", "--mem", dest="jp_mem", type=str, default=DEFAULT_JP_MEM,
-                            help="Memory to allocate for Jupyter")
-JO2_ARG_PARSER.add_argument("-c", "-n", dest="jp_cores", type=int, default=DEFAULT_JP_CORES,
-                            help="Cores to allocate for Jupyter")
+JO2_ARG_PARSER.add_argument("-u", "--user", default=DEFAULT_USER, type=str, help="your O2 username")
+JO2_ARG_PARSER.add_argument("--host", type=str, default=DEFAULT_HOST, help="host to connect to")
+JO2_ARG_PARSER.add_argument("-p", "--port", dest="jp_port", metavar="PORT", type=int, default=DEFAULT_JP_PORT,
+                            help="available port on your system")
+JO2_ARG_PARSER.add_argument("-t", "--time", dest="jp_time", metavar="TIME", type=str, default=DEFAULT_JP_TIME,
+                            help="maximum time for Jupyter session")
+JO2_ARG_PARSER.add_argument("-m", "--mem", dest="jp_mem", metavar="MEM", type=str, default=DEFAULT_JP_MEM,
+                            help="memory to allocate for Jupyter")
+JO2_ARG_PARSER.add_argument("-c", "-n", dest="jp_cores", metavar="CORES", type=int, default=DEFAULT_JP_CORES,
+                            help="cores to allocate for Jupyter")
 JO2_ARG_PARSER.add_argument("-k", "--keepalive", default=False, action='store_true',
-                            help="Keep interactive session alive after exiting Jupyter")
+                            help="keep interactive session alive after exiting Jupyter")
 JO2_ARG_PARSER.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False, action='store_true',
-                            help="Do not quit XQuartz")
+                            help="do not quit XQuartz")
 JO2_ARG_PARSER.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False, action='store_true',
-                            help="Enables trusted X11 forwarding. Equivalent to ssh -Y.")
+                            help="enable trusted X11 forwarding, equivalent to ssh -Y")
 JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true',
-                            help="Increase verbosity level.")
+                            help="increase verbosity level.")
+JO2_ARG_PARSER.add_argument('--version', action='store_true',
+                            help="show the current version and exit")
 JO2_ARG_PARSER.add_argument('--paths', action='store_true',
-                            help="Show configuration paths and exit.")
-JO2_ARG_PARSER.add_argument('--generate-config', type=str, nargs='?', default=None, const=True,
-                            help="Generate the configuration file.")
+                            help="show configuration paths and exit")
+JO2_ARG_PARSER.add_argument('--generate-config', metavar="DIR", type=str, nargs='?', default=None, const=True,
+                            help="generate the configuration file, optionally in the specified directory")
 
 # patterns to search for in ssh
 SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{}[\w\-./%?=]+)\s"  # {} formatted with jupyter port
@@ -107,17 +110,24 @@ class CustomSSH(pxssh.pxssh):
             logger.debug("SEND: {}".format(s))
         return super(CustomSSH, self).sendline(s)
 
-    def sendlineprompt(self, s='', timeout=-1, silence=True):
+    def sendlineprompt(self, s='', timeout=-1, silence=True, check_exit_status=False):
         """
         Send s with sendline and then prompt() once.
 
         :param s: the string to send
         :param timeout: number of seconds to wait for prompt; use default if -1
         :param silence: silence printing of s to debug log
+        :param check_exit_status: check the exit status and print a warning if the command exited with an error
         :return: output of sendline(), output of prompt()
         """
         value = self.sendline(s, silence)
         prompt = self.prompt(timeout)
+        if check_exit_status and not silence:
+            exit_code = self.get_exit_code()
+            exit_message = self.before.split(b'\n')[-2].strip().decode()
+            if exit_code > 0:
+                logger = logging.getLogger(__name__)
+                logger.warning("ERROR: in: {0}\n       code {1}: {2}".format(s, exit_code, exit_message))
         return value, prompt
 
     def sendpass(self, password):
@@ -126,6 +136,23 @@ class CustomSSH(pxssh.pxssh):
         """
         self.silence_logs()
         return self.sendline(password, silence=True)
+
+    def get_exit_code(self):
+        """
+        Get the exit code of the previous command.
+        Maintains the `self.before`, `self.match`, and `self.after` variables.
+        :return: The exit code as an int
+        """
+        before = self.before
+        match = self.match
+        after = self.after
+        self.sendline("echo $?", silence=True)
+        self.prompt()
+        exit_code = int(self.before.split(b'\n')[1].strip())
+        self.before = before
+        self.match = match
+        self.after = after
+        return exit_code
 
     def digest_all_prompts(self, timeout=0.5):
         """Digest all prompts until there is a delay of <timeout>."""
@@ -208,6 +235,12 @@ class JupyterO2(object):
             mem=quote(jp_mem),
             cores=jp_cores
         )
+
+        self.init_jupyter_commands = []
+        if MODULE_LOAD_CALL:
+            self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
+        if SOURCE_JUPYTER_CALL:
+            self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
 
         self.jp_call = JP_CALL_FORMAT.format(
             subcommand=quote(subcommand),
@@ -296,13 +329,10 @@ class JupyterO2(object):
         self.logger.info("Node: {}\n".format(jp_interactive_host))
 
         # start jupyter
-        # TODO provide feedback if commands fail
         # TODO add more flexibility in providing commands
         self.logger.info("Starting Jupyter {}.".format(self.subcommand))
-        if MODULE_LOAD_CALL:
-            self._login_ssh.sendlineprompt(join_cmd("module load", MODULE_LOAD_CALL), silence=False)
-        if SOURCE_JUPYTER_CALL:
-            self._login_ssh.sendlineprompt(join_cmd("source", SOURCE_JUPYTER_CALL), silence=False)
+        for command in self.init_jupyter_commands:
+            self._login_ssh.sendlineprompt(command, silence=False, check_exit_status=True)
         self._login_ssh.sendline(self.jp_call, silence=False)
         self._login_ssh.logfile_read = STDOUT_BUFFER
 
@@ -398,17 +428,22 @@ def main():
     pargs = JO2_ARG_PARSER.parse_args()
     pargs = vars(pargs)
 
-    # generate the config file
+    # print the current version and exit
+    if pargs.pop('version'):
+        print(__version__)
+        return 0
+
+    # print the paths where config files are located, in descending order of precedence, and exit
+    if pargs.pop('paths'):
+        print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
+        print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
+        return 0
+
+    # generate the config file and exit
     do_gen_config = pargs.pop('generate_config')
     if do_gen_config is not None:
         cfg_path = generate_config(do_gen_config)
         print('Generated config file at:\n    {}'.format(cfg_path))
-        return 0
-
-    # print the paths where config files are located, in descending order of precedence
-    if pargs.pop('paths'):
-        print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
-        print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
         return 0
 
     # configure the logging level
