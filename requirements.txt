@@ -1,4 +1,5 @@
 pexpect>=4.3
 dnspython>=1.15
 pyobjc-framework-Quartz>=4; platform_system=="Darwin"
+setuptools
 pbr

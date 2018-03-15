@@ -86,6 +86,7 @@ def check_port_occupied(port, address="127.0.0.1"):
 
 if sys.version_info[:2] < (3, 3):
     old_print = print
+
     def print(*args, **kwargs):
         """
         Compatibility print function for python 2.7,

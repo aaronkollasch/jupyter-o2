@@ -10,10 +10,6 @@ import webbrowser
 import json
 import argparse
 try:
-    from ConfigParser import SafeConfigParser as ConfigParser
-except ImportError:
-    from configparser import ConfigParser
-try:
     from shlex import quote
 except ImportError:
     from pipes import quote
@@ -22,38 +18,7 @@ from pexpect import pxssh
 
 from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
-
-
-JO2_DEFAULTS = {
-    "DEFAULT_USER": "",
-    "DEFAULT_HOST": "o2.hms.harvard.edu",
-    "DEFAULT_JP_PORT": "8887",
-    "DEFAULT_JP_TIME": "0-12:00",
-    "DEFAULT_JP_MEM": "1G",
-    "DEFAULT_JP_CORES": "1",
-    "DEFAULT_JP_SUBCOMMAND": "notebook",
-    "MODULE_LOAD_CALL": "",
-    "SOURCE_JUPYTER_CALL": "",
-    "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --browser='none'",
-    "PORT_RETRIES": "10",
-}
-
-config = ConfigParser(defaults=JO2_DEFAULTS)
-config.add_section('Defaults')
-config.add_section('Settings')
-
-CFG_FILENAME = "jupyter-o2.cfg"
-CFG_DIR = "jupyter-o2"
-
-CFG_SEARCH_LOCATIONS = [                                        # In order of increasing priority:
-    os.path.join("/etc", CFG_DIR, CFG_FILENAME),                # /etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),      # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),     # etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
-    CFG_FILENAME,                                               # ./jupyter-o2.cfg
-]
-
-CFG_LOCATIONS = config.read(CFG_SEARCH_LOCATIONS)
+from .config_manager import (config, CFG_SEARCH_LOCATIONS, CFG_LOCATIONS, generate_config)
 
 DEFAULT_USER = config.get('Defaults', 'DEFAULT_USER')
 DEFAULT_HOST = config.get('Defaults', 'DEFAULT_HOST')
@@ -91,6 +56,8 @@ JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true',
                             help="Increase verbosity level.")
 JO2_ARG_PARSER.add_argument('--paths', action='store_true',
                             help="Show configuration paths and exit.")
+JO2_ARG_PARSER.add_argument('--generate-config', type=str, nargs='?', default=None, const=True,
+                            help="Generate the configuration file.")
 
 # patterns to search for in ssh
 SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{}[\w\-./%?=]+)\s"  # {} formatted with jupyter port
@@ -132,6 +99,9 @@ class CustomSSH(pxssh.pxssh):
         self.logfile_send = None
 
     def sendline(self, s='', silence=True):
+        """
+        Send s, and log to logger.debug() if silence == False
+        """
         if not silence:
             logger = logging.getLogger(__name__)
             logger.debug("SEND: {}".format(s))
@@ -140,11 +110,11 @@ class CustomSSH(pxssh.pxssh):
     def sendlineprompt(self, s='', timeout=-1, silence=True):
         """
         Send s with sendline and then prompt() once.
-        Returns output of sendline(), output of prompt()
 
         :param s: the string to send
         :param timeout: number of seconds to wait for prompt; use default if -1
         :param silence: silence printing of s to debug log
+        :return: output of sendline(), output of prompt()
         """
         value = self.sendline(s, silence)
         prompt = self.prompt(timeout)
@@ -153,8 +123,6 @@ class CustomSSH(pxssh.pxssh):
     def sendpass(self, password):
         """
         Silence all logfiles and send password as a line.
-
-        TODO: scrub the password from pxssh variables like .before and .after
         """
         self.silence_logs()
         return self.sendline(password, silence=True)
@@ -430,18 +398,25 @@ def main():
     pargs = JO2_ARG_PARSER.parse_args()
     pargs = vars(pargs)
 
-    # configure the logging level
-    logging.basicConfig(level=logging.INFO, format="%(msg)s")
-    if pargs.pop('verbose'):
-        logging.getLogger().setLevel(logging.DEBUG)  # set root logger level
-
-    logger = logging.getLogger(__name__)
+    # generate the config file
+    do_gen_config = pargs.pop('generate_config')
+    if do_gen_config is not None:
+        cfg_path = generate_config(do_gen_config)
+        print('Generated config file at:\n    {}'.format(cfg_path))
+        return 0
 
     # print the paths where config files are located, in descending order of precedence
     if pargs.pop('paths'):
         print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
         print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
         return 0
+
+    # configure the logging level
+    logging.basicConfig(level=logging.INFO, format="%(msg)s")
+    if pargs.pop('verbose'):
+        logging.getLogger().setLevel(logging.DEBUG)  # set root logger level
+
+    logger = logging.getLogger(__name__)
 
     if not CFG_LOCATIONS:
         logger.warning("Config file could not be read. Using internal defaults.")
@@ -461,5 +436,5 @@ def main():
         jupyter_o2_runner = JupyterO2(**pargs)
         jupyter_o2_runner.run()
     except JupyterO2Exception as err:
-        logger.error("{}: {}".format(err.__class__.__name__, err))
+        logger.error("{0}: {1}".format(err.__class__.__name__, err))
         return 1
