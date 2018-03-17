@@ -215,6 +215,21 @@ class JupyterO2(object):
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
 
+        self.srun_call = SRUN_CALL_FORMAT.format(
+            time=quote(jp_time),
+            mem=quote(jp_mem),
+            cores=jp_cores
+        )
+
+        self.init_jupyter_commands = []
+        if MODULE_LOAD_CALL:
+            self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
+        if SOURCE_JUPYTER_CALL:
+            self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
+        if INIT_JUPYTER_COMMANDS:
+            self.init_jupyter_commands.extend(INIT_JUPYTER_COMMANDS.strip().split('\n'))
+        self.logger.debug("\n    ".join(["Will initialize Jupyter with commands:"] + self.init_jupyter_commands) + "\n")
+
         # find an open port starting with the supplied port
         success = False
         for port in range(jp_port, jp_port + port_retries + 1):
@@ -230,22 +245,6 @@ class JupyterO2(object):
         if not success:
             self.logger.error("Port {0} and the next {1} ports are already occupied.".format(jp_port, port_retries))
             raise JupyterO2Error("Could not find an available port.")
-
-        self.srun_call = SRUN_CALL_FORMAT.format(
-            time=quote(jp_time),
-            mem=quote(jp_mem),
-            cores=jp_cores
-        )
-
-        self.init_jupyter_commands = []
-        if MODULE_LOAD_CALL:
-            self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
-        if SOURCE_JUPYTER_CALL:
-            self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
-        if INIT_JUPYTER_COMMANDS:
-            print(repr(INIT_JUPYTER_COMMANDS))
-            print(INIT_JUPYTER_COMMANDS.strip().split('\n'))
-            self.init_jupyter_commands.extend(INIT_JUPYTER_COMMANDS.strip().split('\n'))
 
         self.jp_call = JP_CALL_FORMAT.format(
             subcommand=quote(subcommand),
