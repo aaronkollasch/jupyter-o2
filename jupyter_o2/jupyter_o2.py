@@ -32,6 +32,7 @@ DEFAULT_JP_SUBCOMMAND = config.get('Defaults', 'DEFAULT_JP_SUBCOMMAND')
 SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash"
 MODULE_LOAD_CALL = config.get('Settings', 'MODULE_LOAD_CALL')
 SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
+INIT_JUPYTER_COMMANDS = config.get('Settings', 'INIT_JUPYTER_COMMANDS')
 JP_CALL_FORMAT = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
 PORT_RETRIES = config.getint('Settings', 'PORT_RETRIES')
 
@@ -241,6 +242,10 @@ class JupyterO2(object):
             self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
         if SOURCE_JUPYTER_CALL:
             self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
+        if INIT_JUPYTER_COMMANDS:
+            print(repr(INIT_JUPYTER_COMMANDS))
+            print(INIT_JUPYTER_COMMANDS.strip().split('\n'))
+            self.init_jupyter_commands.extend(INIT_JUPYTER_COMMANDS.strip().split('\n'))
 
         self.jp_call = JP_CALL_FORMAT.format(
             subcommand=quote(subcommand),
@@ -329,7 +334,6 @@ class JupyterO2(object):
         self.logger.info("Node: {}\n".format(jp_interactive_host))
 
         # start jupyter
-        # TODO add more flexibility in providing commands
         self.logger.info("Starting Jupyter {}.".format(self.subcommand))
         for command in self.init_jupyter_commands:
             self._login_ssh.sendlineprompt(command, silence=False, check_exit_status=True)

@@ -17,6 +17,7 @@ JO2_DEFAULTS = {
     "DEFAULT_JP_SUBCOMMAND": "notebook",
     "MODULE_LOAD_CALL": "",
     "SOURCE_JUPYTER_CALL": "",
+    "INIT_JUPYTER_COMMANDS": "",
     "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --browser='none'",
     "PORT_RETRIES": "10",
 }
@@ -54,8 +55,8 @@ def generate_config(config_dir=None):
     resource_package = __name__
     resource_path = '/'.join((CFG_FILENAME,))
 
-    # os.makedirs(config_dir, exist_ok=True)
-    try:  # py27-compatible version
+    # py27-compatible version of os.makedirs(config_dir, exist_ok=True)
+    try:
         os.makedirs(config_dir)
     except OSError as e:
         if e.errno != EEXIST:
