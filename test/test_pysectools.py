@@ -3,8 +3,17 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from jupyter_o2.pysectools import zero, cmd_exists, Pinentry
+
+
+class MockStringIO(StringIO):
+    def fileno(self, *args, **kwargs):
+        return 1
 
 
 class TestPysectools(unittest.TestCase):
@@ -17,15 +26,12 @@ class TestPysectools(unittest.TestCase):
         self.assertTrue(cmd_exists('ls'))
 
     @mock.patch('getpass.getpass')
-    @mock.patch('jupyter_o2.cmd_exists')
     @mock.patch('os.isatty')
-    @mock.patch('sys.stdout.fileno')
-    def test_ask_with_getpass(self, file_no, is_a_tty, cmd_exists_val, get_pass):
+    @mock.patch('sys.stdout', new=MockStringIO())
+    def test_ask_with_getpass(self, is_a_tty, get_pass):
         get_pass.return_value = "password"
-        cmd_exists_val.return_value = False
         is_a_tty.return_value = True
-        file_no.return_value = 1
-        p = Pinentry(fallback_to_getpass=True)
+        p = Pinentry(fallback_to_getpass=True, force_getpass=True)
         out = p.ask(
             "This is a test",
             "This is a description",
