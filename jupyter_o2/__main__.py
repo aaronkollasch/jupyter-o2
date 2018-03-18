@@ -16,4 +16,4 @@ if __package__ is None and not hasattr(sys, 'frozen'):
 import jupyter_o2
 
 if __name__ == '__main__':
-    jupyter_o2.main()
+    sys.exit(jupyter_o2.main())

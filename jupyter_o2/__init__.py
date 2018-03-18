@@ -21,12 +21,20 @@ from .jupyter_o2 import (
     main,
     JupyterO2,
     CustomSSH,
-    FilteredOut,
-    JO2_ARG_PARSER
+    FilteredOut
+)
+from .config_manager import (
+    JO2_DEFAULTS,
+    CFG_FILENAME,
+    CFG_DIR,
+    CFG_SEARCH_LOCATIONS,
+    ConfigManager,
+    generate_config,
+    get_base_arg_parser
 )
 
 __author__ = "Aaron Kollasch"
-__date__ = "2018-03-15"
+__date__ = "2018-03-18"
 __copyright__ = "Copyright 2017-2018, Aaron Kollasch"
 __email__ = "awkollasch@gmail.com"
 __status__ = "Beta"

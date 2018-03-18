@@ -6,6 +6,7 @@ try:
     from ConfigParser import SafeConfigParser as ConfigParser
 except ImportError:
     from configparser import ConfigParser
+import argparse
 
 JO2_DEFAULTS = {
     "DEFAULT_USER": "",
@@ -23,10 +24,6 @@ JO2_DEFAULTS = {
     "FORCE_GETPASS": "False",
 }
 
-config = ConfigParser(defaults=JO2_DEFAULTS)
-config.add_section('Defaults')
-config.add_section('Settings')
-
 CFG_FILENAME = "jupyter-o2.cfg"
 CFG_DIR = "jupyter-o2"
 
@@ -37,8 +34,6 @@ CFG_SEARCH_LOCATIONS = [                                        # In order of in
     os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
     CFG_FILENAME,                                               # ./jupyter-o2.cfg
 ]
-
-CFG_LOCATIONS = config.read(CFG_SEARCH_LOCATIONS)
 
 
 def generate_config(config_dir=None):
@@ -69,3 +64,68 @@ def generate_config(config_dir=None):
         config_file.write(default_config)
 
     return config_path
+
+
+def get_base_arg_parser():
+    parser = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
+    parser.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
+    parser.add_argument("-u", "--user", default=JO2_DEFAULTS.get("DEFAULT_USER"), type=str, help="your O2 username")
+    parser.add_argument("--host", type=str, default=JO2_DEFAULTS.get("DEFAULT_HOST"), help="host to connect to")
+    parser.add_argument("-p", "--port", dest="jp_port", metavar="PORT", type=int,
+                        default=JO2_DEFAULTS.get("DEFAULT_JP_PORT"),
+                        help="available port on your system")
+    parser.add_argument("-t", "--time", dest="jp_time", metavar="TIME", type=str,
+                        default=JO2_DEFAULTS.get("DEFAULT_JP_TIME"),
+                        help="maximum time for Jupyter session")
+    parser.add_argument("-m", "--mem", dest="jp_mem", metavar="MEM", type=str,
+                        default=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
+                        help="memory to allocate for Jupyter")
+    parser.add_argument("-c", "-n", dest="jp_cores", metavar="CORES", type=int,
+                        default=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
+                        help="cores to allocate for Jupyter")
+    parser.add_argument("-k", "--keepalive", default=False, action='store_true',
+                        help="keep interactive session alive after exiting Jupyter")
+    parser.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False, action='store_true',
+                        help="do not quit XQuartz")
+    parser.add_argument("--force-getpass", dest="forcegetpass", action='store_true',
+                        default=JO2_DEFAULTS.get("FORCE_GETPASS"),
+                        help="Force the use of getpass instead of pinentry for password entry")
+    parser.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False,
+                        action='store_true',
+                        help="enable trusted X11 forwarding, equivalent to ssh -Y")
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help="increase verbosity level.")
+    parser.add_argument('--version', action='store_true',
+                        help="show the current version and exit")
+    parser.add_argument('--paths', action='store_true',
+                        help="show configuration paths and exit")
+    parser.add_argument('--generate-config', metavar="DIR", type=str, nargs='?', default=None, const=True,
+                        help="generate the configuration file, optionally in the specified directory")
+    return parser
+
+
+class ConfigManager:
+    def __init__(self):
+        self.config = ConfigParser(defaults=JO2_DEFAULTS)
+        self.config.add_section('Defaults')
+        self.config.add_section('Settings')
+
+    def get_config(self):
+        return self.config
+
+    def read(self):
+        return self.config.read(CFG_SEARCH_LOCATIONS)
+
+    def get_arg_parser(self):
+        """Get an arg parser populated with this ConfigManager's defaults."""
+        parser = get_base_arg_parser()
+        parser.set_defaults(
+            user=self.config.get('Defaults', 'DEFAULT_USER'),
+            host=self.config.get('Defaults', 'DEFAULT_HOST'),
+            jp_port=self.config.getint('Defaults', 'DEFAULT_JP_PORT'),
+            jp_time=self.config.get('Defaults', 'DEFAULT_JP_TIME'),
+            jp_mem=self.config.get('Defaults', 'DEFAULT_JP_MEM'),
+            jp_cores=self.config.getint('Defaults', 'DEFAULT_JP_CORES'),
+            forcegetpass=self.config.getboolean('Settings', 'FORCE_GETPASS'),
+        )
+        return parser

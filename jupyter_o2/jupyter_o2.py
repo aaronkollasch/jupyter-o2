@@ -7,7 +7,6 @@ import atexit
 from signal import signal, SIGABRT, SIGINT, SIGTERM
 import logging
 import webbrowser
-import argparse
 try:
     from shlex import quote
 except ImportError:
@@ -18,52 +17,9 @@ from pexpect import pxssh
 from .version import __version__
 from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
-from .config_manager import (config, CFG_SEARCH_LOCATIONS, CFG_LOCATIONS, generate_config)
-
-DEFAULT_USER = config.get('Defaults', 'DEFAULT_USER')
-DEFAULT_HOST = config.get('Defaults', 'DEFAULT_HOST')
-DEFAULT_JP_PORT = config.getint('Defaults', 'DEFAULT_JP_PORT')
-DEFAULT_JP_TIME = config.get('Defaults', 'DEFAULT_JP_TIME')
-DEFAULT_JP_MEM = config.get('Defaults', 'DEFAULT_JP_MEM')
-DEFAULT_JP_CORES = config.getint('Defaults', 'DEFAULT_JP_CORES')
-DEFAULT_JP_SUBCOMMAND = config.get('Defaults', 'DEFAULT_JP_SUBCOMMAND')
+from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config, get_base_arg_parser, ConfigManager)
 
 SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash"
-MODULE_LOAD_CALL = config.get('Settings', 'MODULE_LOAD_CALL')
-SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
-INIT_JUPYTER_COMMANDS = config.get('Settings', 'INIT_JUPYTER_COMMANDS')
-JP_CALL_FORMAT = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
-PORT_RETRIES = config.getint('Settings', 'PORT_RETRIES')
-FORCE_GETPASS = config.getboolean('Settings', 'FORCE_GETPASS')
-
-JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
-JO2_ARG_PARSER.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
-JO2_ARG_PARSER.add_argument("-u", "--user", default=DEFAULT_USER, type=str, help="your O2 username")
-JO2_ARG_PARSER.add_argument("--host", type=str, default=DEFAULT_HOST, help="host to connect to")
-JO2_ARG_PARSER.add_argument("-p", "--port", dest="jp_port", metavar="PORT", type=int, default=DEFAULT_JP_PORT,
-                            help="available port on your system")
-JO2_ARG_PARSER.add_argument("-t", "--time", dest="jp_time", metavar="TIME", type=str, default=DEFAULT_JP_TIME,
-                            help="maximum time for Jupyter session")
-JO2_ARG_PARSER.add_argument("-m", "--mem", dest="jp_mem", metavar="MEM", type=str, default=DEFAULT_JP_MEM,
-                            help="memory to allocate for Jupyter")
-JO2_ARG_PARSER.add_argument("-c", "-n", dest="jp_cores", metavar="CORES", type=int, default=DEFAULT_JP_CORES,
-                            help="cores to allocate for Jupyter")
-JO2_ARG_PARSER.add_argument("-k", "--keepalive", default=False, action='store_true',
-                            help="keep interactive session alive after exiting Jupyter")
-JO2_ARG_PARSER.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False, action='store_true',
-                            help="do not quit XQuartz")
-JO2_ARG_PARSER.add_argument("--force-getpass", dest="forcegetpass", default=FORCE_GETPASS, action='store_true',
-                            help="Force the use of getpass instead of pinentry for password entry")
-JO2_ARG_PARSER.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False, action='store_true',
-                            help="enable trusted X11 forwarding, equivalent to ssh -Y")
-JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true',
-                            help="increase verbosity level.")
-JO2_ARG_PARSER.add_argument('--version', action='store_true',
-                            help="show the current version and exit")
-JO2_ARG_PARSER.add_argument('--paths', action='store_true',
-                            help="show configuration paths and exit")
-JO2_ARG_PARSER.add_argument('--generate-config', metavar="DIR", type=str, nargs='?', default=None, const=True,
-                            help="generate the configuration file, optionally in the specified directory")
 
 # patterns to search for in ssh
 SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{}[\w\-./%?=]+)\s"  # {} formatted with jupyter port
@@ -197,17 +153,18 @@ class JupyterO2Error(JupyterO2Exception):
 class JupyterO2(object):
     def __init__(
             self,
-            user=DEFAULT_USER,
-            host=DEFAULT_HOST,
-            subcommand=DEFAULT_JP_SUBCOMMAND,
-            jp_port=DEFAULT_JP_PORT,
-            port_retries=PORT_RETRIES,
-            jp_time=DEFAULT_JP_TIME,
-            jp_mem=DEFAULT_JP_MEM,
-            jp_cores=DEFAULT_JP_CORES,
+            config,
+            user=JO2_DEFAULTS.get("DEFAULT_USER"),
+            host=JO2_DEFAULTS.get("DEFAULT_HOST"),
+            subcommand=JO2_DEFAULTS.get("DEFAULT_JP_SUBCOMMAND"),
+            jp_port=JO2_DEFAULTS.get("DEFAULT_JP_PORT"),
+            port_retries=int(JO2_DEFAULTS.get("PORT_RETRIES")),
+            jp_time=JO2_DEFAULTS.get("DEFAULT_JP_TIME"),
+            jp_mem=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
+            jp_cores=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
             keepalive=False,
             keepxquartz=False,
-            forcegetpass=FORCE_GETPASS,
+            forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS"),
             forwardx11trusted=False,
     ):
         self.logger = logging.getLogger(__name__)
@@ -217,6 +174,11 @@ class JupyterO2(object):
         self.subcommand = subcommand
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
+
+        module_load_call = config.get('Settings', 'MODULE_LOAD_CALL')
+        source_jupyter_call = config.get('Settings', 'SOURCE_JUPYTER_CALL')
+        init_jupyter_commands = config.get('Settings', 'INIT_JUPYTER_COMMANDS')
+        jp_call_format = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
 
         # find an open port starting with the supplied port
         success = False
@@ -242,15 +204,15 @@ class JupyterO2(object):
         )
 
         self.init_jupyter_commands = []
-        if MODULE_LOAD_CALL:
-            self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
-        if SOURCE_JUPYTER_CALL:
-            self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
-        if INIT_JUPYTER_COMMANDS:
-            self.init_jupyter_commands.extend(INIT_JUPYTER_COMMANDS.strip().split('\n'))
+        if module_load_call:
+            self.init_jupyter_commands.append(join_cmd("module load", module_load_call))
+        if source_jupyter_call:
+            self.init_jupyter_commands.append(join_cmd("source", source_jupyter_call))
+        if init_jupyter_commands:
+            self.init_jupyter_commands.extend(init_jupyter_commands.strip().split('\n'))
         self.logger.debug("\n    ".join(["Will initialize Jupyter with commands:"] + self.init_jupyter_commands) + "\n")
 
-        self.jp_call = JP_CALL_FORMAT.format(
+        self.jp_call = jp_call_format.format(
             subcommand=quote(subcommand),
             port=self.jp_port
         )
@@ -425,19 +387,18 @@ class JupyterO2(object):
 
 
 def main():
+    # load the config file
+    config_mgr = ConfigManager()
+    cfg_locations = config_mgr.read()
+    config = config_mgr.get_config()
+
     # parse the command line arguments
-    pargs = JO2_ARG_PARSER.parse_args()
+    pargs = config_mgr.get_arg_parser().parse_args()
     pargs = vars(pargs)
 
     # print the current version and exit
     if pargs.pop('version'):
         print(__version__)
-        return 0
-
-    # print the paths where config files are located, in descending order of precedence, and exit
-    if pargs.pop('paths'):
-        print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
-        print('\n    '.join(["Found config file in:"] + CFG_LOCATIONS[::-1]))
         return 0
 
     # generate the config file and exit
@@ -447,6 +408,12 @@ def main():
         print('Generated config file at:\n    {}'.format(cfg_path))
         return 0
 
+    # print the paths where config files are located, in descending order of precedence, and exit
+    if pargs.pop('paths'):
+        print('\n    '.join(["Searching for config file in:"] + CFG_SEARCH_LOCATIONS[::-1]))
+        print('\n    '.join(["Found config file in:"] + cfg_locations[::-1]))
+        return 0
+
     # configure the logging level
     logging.basicConfig(level=logging.INFO, format="%(msg)s")
     if pargs.pop('verbose'):
@@ -454,17 +421,18 @@ def main():
 
     logger = logging.getLogger(__name__)
 
-    if not CFG_LOCATIONS:
+    if not cfg_locations:
         logger.warning("Config file could not be read. Using internal defaults.")
     else:
         logger.debug("Config file(s) read from (in decreasing priority):\n{}\n"
-                     .format('\n'.join(CFG_LOCATIONS[::-1])))
+                     .format('\n'.join(cfg_locations[::-1])))
 
-    if pargs['subcommand'] is None:
+    if not pargs['subcommand']:
+        default_jp_subcommand = config.get('Defaults', 'DEFAULT_JP_SUBCOMMAND')
         # # removed error message so that program will use the default subcommand
         # JO2_ARG_PARSER.error("the following arguments are required: subcommand")
-        logger.warning("Jupyter subcommand not provided. Using default: {}".format(DEFAULT_JP_SUBCOMMAND))
-        pargs['subcommand'] = DEFAULT_JP_SUBCOMMAND
+        logger.warning("Jupyter subcommand not provided. Using default: {}".format(default_jp_subcommand))
+        pargs['subcommand'] = default_jp_subcommand
 
     # start Jupyter-O2
     logger.debug(
@@ -478,7 +446,7 @@ def main():
         "\n"
     )
     try:
-        jupyter_o2_runner = JupyterO2(**pargs)
+        jupyter_o2_runner = JupyterO2(config, **pargs)
         jupyter_o2_runner.run()
     except JupyterO2Exception as err:
         logger.error("{0}: {1}".format(err.__class__.__name__, err))
