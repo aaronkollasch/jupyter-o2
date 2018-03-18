@@ -18,13 +18,6 @@ Next, install Jupyter-O2.
 
 Then, run ``jupyter-o2 --generate-config`` and open the generated file,  ``jupyter-o2.cfg``.
 
-.. warning::
-
-    If updating from 0.2.3 or earlier, copy ``jupyter-o2.cfg`` to a temporary location,
-    or it will be deleted automatically.
-    You may also copy ``jupyter-o2.cfg`` to a location listed by ``jupyter-o2 --paths``.
-    This will no longer be an issue from 0.2.4 onwards, as the file is not added during installation.
-
 Edit ``jupyter-o2.cfg`` according to its instructions, particularly the
 ``DEFAULT_USER``, ``MODULE_LOAD_CALL``, and ``SOURCE_JUPYTER_CALL`` fields.
 
