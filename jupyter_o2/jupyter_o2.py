@@ -34,6 +34,7 @@ SOURCE_JUPYTER_CALL = config.get('Settings', 'SOURCE_JUPYTER_CALL')
 INIT_JUPYTER_COMMANDS = config.get('Settings', 'INIT_JUPYTER_COMMANDS')
 JP_CALL_FORMAT = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
 PORT_RETRIES = config.getint('Settings', 'PORT_RETRIES')
+FORCE_GETPASS = config.getboolean('Settings', 'FORCE_GETPASS')
 
 JO2_ARG_PARSER = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
 JO2_ARG_PARSER.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
@@ -51,6 +52,8 @@ JO2_ARG_PARSER.add_argument("-k", "--keepalive", default=False, action='store_tr
                             help="keep interactive session alive after exiting Jupyter")
 JO2_ARG_PARSER.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False, action='store_true',
                             help="do not quit XQuartz")
+JO2_ARG_PARSER.add_argument("--force-getpass", dest="forcegetpass", default=FORCE_GETPASS, action='store_true',
+                            help="Force the use of getpass instead of pinentry for password entry")
 JO2_ARG_PARSER.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False, action='store_true',
                             help="enable trusted X11 forwarding, equivalent to ssh -Y")
 JO2_ARG_PARSER.add_argument('-v', '--verbose', action='store_true',
@@ -96,24 +99,21 @@ class CustomSSH(pxssh.pxssh):
             return False
 
     def silence_logs(self):
-        """Prevent printing into any logfile."""
-        self.logfile = None
-        self.logfile_read = None
-        self.logfile_send = None
+        """Prevent printing into any logfile.
+        :return: previous logfile, logfile_read, logfile_send"""
+        logfile, logfile_read, logfile_send = self.logfile, self.logfile_read, self.logfile_send
+        self.logfile, self.logfile_read, self.logfile_send = None, None, None
+        return logfile, logfile_read, logfile_send
 
     def sendline(self, s='', silence=True):
-        """
-        Send s, and log to logger.debug() if silence == False
-        """
+        """Send s, and log to logger.debug() if silence == False"""
         if not silence:
             logger = logging.getLogger(__name__)
             logger.debug("SEND: {}".format(s))
         return super(CustomSSH, self).sendline(s)
 
     def sendlineprompt(self, s='', timeout=-1, silence=True, check_exit_status=False):
-        """
-        Send s with sendline and then prompt() once.
-
+        """Send s with sendline and then prompt() once.
         :param s: the string to send
         :param timeout: number of seconds to wait for prompt; use default if -1
         :param silence: silence printing of s to debug log
@@ -130,16 +130,19 @@ class CustomSSH(pxssh.pxssh):
                 logger.warning("ERROR: in: {0}\n       code {1}: {2}".format(s, exit_code, exit_message))
         return value, prompt
 
-    def sendpass(self, password):
+    def sendpass(self, password, restore_logs=False):
+        """Silence all logfiles and send password as a line.
+        :param password: The password
+        :param restore_logs: Restore the previous logfiles after sending the password
         """
-        Silence all logfiles and send password as a line.
-        """
-        self.silence_logs()
-        return self.sendline(password, silence=True)
+        logfile, logfile_read, logfile_send = self.silence_logs()
+        return_val = self.sendline(password, silence=True)
+        if restore_logs:
+            self.logfile, self.logfile_read, self.logfile_send = logfile, logfile_read, logfile_send
+        return return_val
 
     def get_exit_code(self):
-        """
-        Get the exit code of the previous command.
+        """Get the exit code of the previous command.
         Maintains the `self.before`, `self.match`, and `self.after` variables.
         :return: The exit code as an int
         """
@@ -204,6 +207,7 @@ class JupyterO2(object):
             jp_cores=DEFAULT_JP_CORES,
             keepalive=False,
             keepxquartz=False,
+            forcegetpass=FORCE_GETPASS,
             forwardx11trusted=False,
     ):
         self.logger = logging.getLogger(__name__)
@@ -253,7 +257,7 @@ class JupyterO2(object):
         self.logger.debug("Will run Jupyter with command:\n    {}\n".format(self.jp_call))
 
         self.__o2_pass = ""
-        self._pinentry = Pinentry(pinentry_path=PINENTRY_PATH, fallback_to_getpass=True)
+        self._pinentry = Pinentry(pinentry_path=PINENTRY_PATH, fallback_to_getpass=True, force_getpass=forcegetpass)
 
         login_ssh_options = {
             "ForwardX11": "yes",
@@ -274,18 +278,14 @@ class JupyterO2(object):
             signal(sig, self.term)
 
     def run(self):
-        """
-        Run the standard JupyterO2 sequence
-        """
+        """Run the standard JupyterO2 sequence"""
         self.ask_for_pin()
         if self.connect() or self.keep_alive:
             self.logger.info("Starting pexpect interactive mode.")
             self.interact()
 
     def ask_for_pin(self):
-        """
-        Prompt for an O2 password
-        """
+        """Prompt for an O2 password"""
         self.__o2_pass = self._pinentry.ask(
             prompt="Enter your passphrase: ",
             description="Connect to O2 server for jupyter {}".format(self.subcommand),
@@ -392,8 +392,7 @@ class JupyterO2(object):
             self._login_ssh.interact(output_filter=interact_filter.exit_on_find)
 
     def close(self, cprint=print, *__):
-        """
-        Close JupyterO2.
+        """Close JupyterO2.
         :param cprint: allows printing to be disabled if necessary using `cprint=lambda x, end=None, flush=None: None`
         """
         def _cprint(*args, **kwargs):
@@ -411,9 +410,7 @@ class JupyterO2(object):
             self._second_ssh.close(force=True)
 
     def term(self, *__):
-        """
-        Terminate JupyterO2 and exit.
-        """
+        """Terminate JupyterO2 and exit."""
         if not self.flag_exit:
             self.flag_exit = True
             try:

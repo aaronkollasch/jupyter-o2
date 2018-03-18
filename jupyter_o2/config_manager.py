@@ -20,6 +20,7 @@ JO2_DEFAULTS = {
     "INIT_JUPYTER_COMMANDS": "",
     "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --browser='none'",
     "PORT_RETRIES": "10",
+    "FORCE_GETPASS": "False",
 }
 
 config = ConfigParser(defaults=JO2_DEFAULTS)
