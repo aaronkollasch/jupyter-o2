@@ -17,10 +17,16 @@ class TestPysectools(unittest.TestCase):
         self.assertTrue(cmd_exists('ls'))
 
     @mock.patch('getpass.getpass')
-    def test_ask_with_getpass(self, getpass):
-        p = Pinentry()
-        getpass.return_value = "password"
-        out = p._ask_with_getpass(
+    @mock.patch('jupyter_o2.cmd_exists')
+    @mock.patch('os.isatty')
+    @mock.patch('sys.stdout.fileno')
+    def test_ask_with_getpass(self, file_no, is_a_tty, cmd_exists_val, get_pass):
+        get_pass.return_value = "password"
+        cmd_exists_val.return_value = False
+        is_a_tty.return_value = True
+        file_no.return_value = 1
+        p = Pinentry(fallback_to_getpass=True)
+        out = p.ask(
             "This is a test",
             "This is a description",
             "This is an error",

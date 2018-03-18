@@ -7,7 +7,6 @@ import atexit
 from signal import signal, SIGABRT, SIGINT, SIGTERM
 import logging
 import webbrowser
-import json
 import argparse
 try:
     from shlex import quote
@@ -215,21 +214,6 @@ class JupyterO2(object):
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
 
-        self.srun_call = SRUN_CALL_FORMAT.format(
-            time=quote(jp_time),
-            mem=quote(jp_mem),
-            cores=jp_cores
-        )
-
-        self.init_jupyter_commands = []
-        if MODULE_LOAD_CALL:
-            self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
-        if SOURCE_JUPYTER_CALL:
-            self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
-        if INIT_JUPYTER_COMMANDS:
-            self.init_jupyter_commands.extend(INIT_JUPYTER_COMMANDS.strip().split('\n'))
-        self.logger.debug("\n    ".join(["Will initialize Jupyter with commands:"] + self.init_jupyter_commands) + "\n")
-
         # find an open port starting with the supplied port
         success = False
         for port in range(jp_port, jp_port + port_retries + 1):
@@ -245,11 +229,28 @@ class JupyterO2(object):
         if not success:
             self.logger.error("Port {0} and the next {1} ports are already occupied.".format(jp_port, port_retries))
             raise JupyterO2Error("Could not find an available port.")
+        self.logger.debug("")
+
+        self.srun_call = SRUN_CALL_FORMAT.format(
+            time=quote(jp_time),
+            mem=quote(jp_mem),
+            cores=jp_cores
+        )
+
+        self.init_jupyter_commands = []
+        if MODULE_LOAD_CALL:
+            self.init_jupyter_commands.append(join_cmd("module load", MODULE_LOAD_CALL))
+        if SOURCE_JUPYTER_CALL:
+            self.init_jupyter_commands.append(join_cmd("source", SOURCE_JUPYTER_CALL))
+        if INIT_JUPYTER_COMMANDS:
+            self.init_jupyter_commands.extend(INIT_JUPYTER_COMMANDS.strip().split('\n'))
+        self.logger.debug("\n    ".join(["Will initialize Jupyter with commands:"] + self.init_jupyter_commands) + "\n")
 
         self.jp_call = JP_CALL_FORMAT.format(
             subcommand=quote(subcommand),
             port=self.jp_port
         )
+        self.logger.debug("Will run Jupyter with command:\n    {}\n".format(self.jp_call))
 
         self.__o2_pass = ""
         self._pinentry = Pinentry(pinentry_path=PINENTRY_PATH, fallback_to_getpass=True)
@@ -316,7 +317,7 @@ class JupyterO2(object):
         # enter an interactive session
         self.logger.info("Starting an interactive session.")
         self._login_ssh.PROMPT = PASSWORD_REQUEST_PATTERN
-        self._login_ssh.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun')
+        self._login_ssh.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun:')
         if not self._login_ssh.sendlineprompt(self.srun_call, silence=False)[1]:
             self.logger.error(
                 "The timeout ({}) was reached without receiving a password request."
@@ -469,7 +470,16 @@ def main():
         pargs['subcommand'] = DEFAULT_JP_SUBCOMMAND
 
     # start Jupyter-O2
-    logger.debug("Running Jupyter-O2 with options:\n{}\n".format(json.dumps(pargs, indent=2)))
+    logger.debug(
+        "\n ".join(
+            ["Running Jupyter-O2 with options:"] +
+            [
+                " " * (max(map(len, pargs.keys())) - len(pair[0])) +
+                ": ".join(str(item) for item in pair) for pair in pargs.items()
+            ]
+        ) +
+        "\n"
+    )
     try:
         jupyter_o2_runner = JupyterO2(**pargs)
         jupyter_o2_runner.run()
