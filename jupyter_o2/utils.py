@@ -11,40 +11,35 @@ except ImportError:
     from pipes import quote
 import socket
 
-try:
-    import dns.resolver
-except ImportError:
-    dns = None
-try:
-    from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionAll, kCGNullWindowID
-    from PyObjCTools import Conversion
-    quartz_supported = True
-except ImportError:
-    quartz_supported = False
-
 
 def join_cmd(cmd, args_string):
     """Create a bash command by joining cmd and args_string. Resistant to injection within args_string."""
     return ' '.join([cmd] + [quote(item) for item in shlex.split(args_string)])
 
 
-if dns is not None:
-    DNS_SERVER_GROUPS = [  # dns servers that have entries for loginXX.o2.rc.hms.harvard.edu
-        dns.resolver.Resolver().nameservers,                    # current nameservers, checked first
-        ["134.174.17.6", "134.174.141.2"],                      # HMS nameservers
-        ["128.103.1.1", "128.103.201.100", "128.103.200.101"],  # HU nameservers
-    ]
-    # test that you can access the login nodes with nslookup login01.o2.rc.hms.harvard.edu <DNS>
-else:
-    DNS_SERVER_GROUPS = None
+DNS_SERVER_GROUPS = [ # dns servers that have entries for loginXX.o2.rc.hms.harvard.edu
+    ["134.174.17.6", "134.174.141.2"],  # HMS nameservers
+    ["128.103.1.1", "128.103.201.100", "128.103.200.101"],  # HU nameservers
+]
+# test that you can access the login nodes with nslookup login01.o2.rc.hms.harvard.edu <DNS>
 
 
-def check_dns(hostname, dns_groups=DNS_SERVER_GROUPS):
+def check_dns(hostname, dns_groups=None):
     """Check if hostname is reachable by any group of dns servers.
 
     :return: tuple of (dns error code, hostname)
     """
+    try:
+        import dns.resolver
+    except ImportError:
+        dns = None
+
     if dns is not None:
+        if dns_groups is None:
+            dns_groups = [
+                dns.resolver.Resolver().nameservers  # current nameservers, checked first
+            ] + DNS_SERVER_GROUPS
+
         dns_err_code = 0
         for dns_servers in dns_groups:
             try:
@@ -118,15 +113,13 @@ def try_quit_xquartz():
     logger = logging.getLogger(__name__)
     if sys.platform != "darwin":
         return
-    if not quartz_supported:
-        logger.warning("Quitting XQuartz is not supported. Import pyobjc-framework-Quartz with pip.")
     try:
         if not xquartz_is_open():
             return
         print("Quitting XQuartz... ", end='')
         open_windows = get_xquartz_open_windows()
         if open_windows is None:
-            pass
+            logger.warning("Quitting XQuartz is not supported. Import pyobjc-framework-Quartz with pip.")
         elif not open_windows:
             quit_xquartz()
         else:
@@ -153,20 +146,22 @@ def get_xquartz_open_windows():
     Requires pyobjc-framework-Quartz (install with pip)
     :return: a list of open windows as python dictionaries
     """
-    if quartz_supported:
-        # need to use kCGWindowListOptionAll to include windows that are not currently on screen (e.g. minimized)
-        windows = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID)
-
-        # then filter for XQuartz main windows
-        open_windows = [window for window in windows if window['kCGWindowOwnerName'] == "XQuartz" and
-                        window['kCGWindowLayer'] == 0 and 'kCGWindowName' in window.keys() and
-                        window['kCGWindowName'] not in ['', 'X11 Application Menu', 'X11 Preferences']]
-
-        # convert from NSDictionary to python dictionary
-        open_windows = Conversion.pythonCollectionFromPropertyList(open_windows)
-        return open_windows
-    else:
+    try:
+        from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionAll, kCGNullWindowID
+        from PyObjCTools import Conversion
+    except ImportError:
         return None
+    # need to use kCGWindowListOptionAll to include windows that are not currently on screen (e.g. minimized)
+    windows = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID)
+
+    # then filter for XQuartz main windows
+    open_windows = [window for window in windows if window['kCGWindowOwnerName'] == "XQuartz" and
+                    window['kCGWindowLayer'] == 0 and 'kCGWindowName' in window.keys() and
+                    window['kCGWindowName'] not in ['', 'X11 Application Menu', 'X11 Preferences']]
+
+    # convert from NSDictionary to python dictionary
+    open_windows = Conversion.pythonCollectionFromPropertyList(open_windows)
+    return open_windows
 
 
 def xquartz_is_open():

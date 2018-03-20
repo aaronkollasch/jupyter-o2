@@ -13,7 +13,7 @@ if __package__ is None and not hasattr(sys, 'frozen'):
     path = os.path.realpath(os.path.abspath(__file__))
     sys.path.insert(0, os.path.dirname(os.path.dirname(path)))
 
-import jupyter_o2
+from jupyter_o2 import main
 
 if __name__ == '__main__':
-    sys.exit(jupyter_o2.main())
+    sys.exit(main())

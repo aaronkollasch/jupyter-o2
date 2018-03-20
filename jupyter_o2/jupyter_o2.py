@@ -17,7 +17,7 @@ from pexpect import pxssh
 from .version import __version__
 from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
-from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config, get_base_arg_parser, ConfigManager)
+from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config, ConfigManager)
 
 SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash"
 

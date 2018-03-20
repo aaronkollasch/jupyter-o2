@@ -1,6 +1,5 @@
 import os
 import sys
-import pkg_resources
 from errno import EEXIST
 try:
     from ConfigParser import SafeConfigParser as ConfigParser
@@ -37,12 +36,13 @@ CFG_SEARCH_LOCATIONS = [                                        # In order of in
 
 
 def generate_config(config_dir=None):
-    """
-    Write the default configuration file. Overwrites any existing config file.
+    """Write the default configuration file. Overwrites any existing config file.
     :param config_dir: The directory to place the config file,
     or None or a boolean to use the default directory.
     :return: The config file location
     """
+    from pkg_resources import resource_string
+
     if config_dir is None or isinstance(config_dir, bool):
         config_dir = os.path.join(sys.prefix, "etc", CFG_DIR)
 
@@ -58,7 +58,7 @@ def generate_config(config_dir=None):
         if e.errno != EEXIST:
             raise
 
-    default_config = pkg_resources.resource_string(resource_package, resource_path)
+    default_config = resource_string(resource_package, resource_path)
 
     with open(config_path, 'wb') as config_file:
         config_file.write(default_config)
@@ -69,8 +69,10 @@ def generate_config(config_dir=None):
 def get_base_arg_parser():
     parser = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
     parser.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
-    parser.add_argument("-u", "--user", default=JO2_DEFAULTS.get("DEFAULT_USER"), type=str, help="your O2 username")
-    parser.add_argument("--host", type=str, default=JO2_DEFAULTS.get("DEFAULT_HOST"), help="host to connect to")
+    parser.add_argument("-u", "--user", default=JO2_DEFAULTS.get("DEFAULT_USER"), type=str,
+                        help="your O2 username")
+    parser.add_argument("--host", type=str, default=JO2_DEFAULTS.get("DEFAULT_HOST"),
+                        help="host to connect to")
     parser.add_argument("-p", "--port", dest="jp_port", metavar="PORT", type=int,
                         default=JO2_DEFAULTS.get("DEFAULT_JP_PORT"),
                         help="available port on your system")
