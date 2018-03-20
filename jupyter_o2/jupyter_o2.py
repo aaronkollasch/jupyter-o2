@@ -157,14 +157,14 @@ class JupyterO2(object):
             user=JO2_DEFAULTS.get("DEFAULT_USER"),
             host=JO2_DEFAULTS.get("DEFAULT_HOST"),
             subcommand=JO2_DEFAULTS.get("DEFAULT_JP_SUBCOMMAND"),
-            jp_port=JO2_DEFAULTS.get("DEFAULT_JP_PORT"),
+            jp_port=int(JO2_DEFAULTS.get("DEFAULT_JP_PORT")),
             port_retries=int(JO2_DEFAULTS.get("PORT_RETRIES")),
             jp_time=JO2_DEFAULTS.get("DEFAULT_JP_TIME"),
             jp_mem=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
-            jp_cores=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
+            jp_cores=int(JO2_DEFAULTS.get("DEFAULT_JP_CORES")),
             keepalive=False,
             keepxquartz=False,
-            forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS"),
+            forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS") == "True",
             forwardx11trusted=False,
     ):
         self.logger = logging.getLogger(__name__)
