@@ -153,7 +153,7 @@ class JupyterO2Error(JupyterO2Exception):
 class JupyterO2(object):
     def __init__(
             self,
-            config,
+            config=None,
             user=JO2_DEFAULTS.get("DEFAULT_USER"),
             host=JO2_DEFAULTS.get("DEFAULT_HOST"),
             subcommand=JO2_DEFAULTS.get("DEFAULT_JP_SUBCOMMAND"),
@@ -174,6 +174,11 @@ class JupyterO2(object):
         self.subcommand = subcommand
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
+
+        if config is None:
+            config_mgr = ConfigManager()
+            config_mgr.read()
+            config = config_mgr.get_config()
 
         module_load_call = config.get('Settings', 'MODULE_LOAD_CALL')
         source_jupyter_call = config.get('Settings', 'SOURCE_JUPYTER_CALL')

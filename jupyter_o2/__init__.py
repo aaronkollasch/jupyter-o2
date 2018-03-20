@@ -2,6 +2,7 @@ from .version import __version__, version_info
 from .utils import (
     eprint,
     join_cmd,
+    DNS_SERVER_GROUPS,
     check_dns,
     try_quit_xquartz,
     get_xquartz_open_windows,
