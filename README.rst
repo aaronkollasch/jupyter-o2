@@ -23,7 +23,7 @@ Edit ``jupyter-o2.cfg`` according to its instructions, particularly the
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
 
-.. _jupyter-o2 tips: https://github.com/AaronKollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
+.. _jupyter-o2 tips: https://github.com/aaronkollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
 
 Usage
 ------------------------------

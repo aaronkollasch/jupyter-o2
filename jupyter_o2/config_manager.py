@@ -10,18 +10,19 @@ import argparse
 JO2_DEFAULTS = {
     "DEFAULT_USER": "",
     "DEFAULT_HOST": "o2.hms.harvard.edu",
-    "DEFAULT_JP_PORT": "8887",
+    "DEFAULT_JP_PORT": 8887,
     "DEFAULT_JP_TIME": "0-12:00",
     "DEFAULT_JP_MEM": "1G",
-    "DEFAULT_JP_CORES": "1",
+    "DEFAULT_JP_CORES": 1,
     "DEFAULT_JP_SUBCOMMAND": "notebook",
     "MODULE_LOAD_CALL": "",
     "SOURCE_JUPYTER_CALL": "",
     "INIT_JUPYTER_COMMANDS": "",
-    "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --browser='none'",
-    "PORT_RETRIES": "10",
-    "FORCE_GETPASS": "False",
+    "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --no-browser",
+    "PORT_RETRIES": 10,
+    "FORCE_GETPASS": False,
 }
+JO2_DEFAULTS_STR = {key: str(value) for key, value in JO2_DEFAULTS.items()}
 
 CFG_FILENAME = "jupyter-o2.cfg"
 CFG_DIR = "jupyter-o2"
@@ -35,16 +36,18 @@ CFG_SEARCH_LOCATIONS = [                                        # In order of in
 ]
 
 
-def generate_config(config_dir=None):
+def generate_config_file(config_dir=None):
     """Write the default configuration file. Overwrites any existing config file.
     :param config_dir: The directory to place the config file,
-    or None or a boolean to use the default directory.
+    or None or True to use the default directory.
     :return: The config file location
     """
     from pkg_resources import resource_string
 
-    if config_dir is None or isinstance(config_dir, bool):
+    if config_dir is None or config_dir is True:
         config_dir = os.path.join(sys.prefix, "etc", CFG_DIR)
+    elif config_dir is False:
+        return
 
     config_path = os.path.join(config_dir, CFG_FILENAME)
 
@@ -96,7 +99,7 @@ def get_base_arg_parser():
                         action='store_true',
                         help="enable trusted X11 forwarding, equivalent to ssh -Y")
     parser.add_argument('-v', '--verbose', action='store_true',
-                        help="increase verbosity level.")
+                        help="increase verbosity level")
     parser.add_argument('--version', action='store_true',
                         help="show the current version and exit")
     parser.add_argument('--paths', action='store_true',
@@ -106,14 +109,11 @@ def get_base_arg_parser():
     return parser
 
 
-class ConfigManager:
+class ConfigManager(object):
     def __init__(self):
-        self.config = ConfigParser(defaults=JO2_DEFAULTS)
+        self.config = ConfigParser(defaults=JO2_DEFAULTS_STR)
         self.config.add_section('Defaults')
         self.config.add_section('Settings')
-
-    def get_config(self):
-        return self.config
 
     def read(self):
         return self.config.read(CFG_SEARCH_LOCATIONS)

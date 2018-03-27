@@ -17,7 +17,7 @@ from pexpect import pxssh
 from .version import __version__
 from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
-from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config, ConfigManager)
+from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config_file, ConfigManager)
 
 SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash"
 
@@ -102,15 +102,10 @@ class CustomSSH(pxssh.pxssh):
         Maintains the `self.before`, `self.match`, and `self.after` variables.
         :return: The exit code as an int
         """
-        before = self.before
-        match = self.match
-        after = self.after
-        self.sendline("echo $?", silence=True)
-        self.prompt()
+        before, match, after = self.before, self.match, self.after
+        self.sendlineprompt("echo $?", silence=True)
         exit_code = int(self.before.split(b'\n')[1].strip())
-        self.before = before
-        self.match = match
-        self.after = after
+        self.before, self.match, self.after = before, match, after
         return exit_code
 
     def digest_all_prompts(self, timeout=0.5):
@@ -157,14 +152,14 @@ class JupyterO2(object):
             user=JO2_DEFAULTS.get("DEFAULT_USER"),
             host=JO2_DEFAULTS.get("DEFAULT_HOST"),
             subcommand=JO2_DEFAULTS.get("DEFAULT_JP_SUBCOMMAND"),
-            jp_port=int(JO2_DEFAULTS.get("DEFAULT_JP_PORT")),
-            port_retries=int(JO2_DEFAULTS.get("PORT_RETRIES")),
+            jp_port=JO2_DEFAULTS.get("DEFAULT_JP_PORT"),
+            port_retries=JO2_DEFAULTS.get("PORT_RETRIES"),
             jp_time=JO2_DEFAULTS.get("DEFAULT_JP_TIME"),
             jp_mem=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
-            jp_cores=int(JO2_DEFAULTS.get("DEFAULT_JP_CORES")),
+            jp_cores=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
             keepalive=False,
             keepxquartz=False,
-            forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS") == "True",
+            forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS"),
             forwardx11trusted=False,
     ):
         self.logger = logging.getLogger(__name__)
@@ -178,7 +173,7 @@ class JupyterO2(object):
         if config is None:
             config_mgr = ConfigManager()
             config_mgr.read()
-            config = config_mgr.get_config()
+            config = config_mgr.config
 
         module_load_call = config.get('Settings', 'MODULE_LOAD_CALL')
         source_jupyter_call = config.get('Settings', 'SOURCE_JUPYTER_CALL')
@@ -336,7 +331,8 @@ class JupyterO2(object):
         self.logger.info("Connected.")
 
         # open Jupyter in browser
-        print("\nJupyter is ready! Access at:\n{}\nOpening in browser...\n".format(jp_site))
+        print("\nJupyter is ready! Access at:\n{}")
+        self.logger.info("Opening in browser...\n".format(jp_site))
         try:
             webbrowser.open(jp_site, new=2)
         except webbrowser.Error as error:
@@ -358,22 +354,25 @@ class JupyterO2(object):
             interact_filter = FilteredOut(None, b'[PEXPECT]$ ')
             self._login_ssh.interact(output_filter=interact_filter.exit_on_find)
 
-    def close(self, cprint=print, *__):
+    def close(self, print_func=print, *__):
         """Close JupyterO2.
-        :param cprint: allows printing to be disabled if necessary using `cprint=lambda x, end=None, flush=None: None`
+        Print messages if used in logging.DEBUG mode.
+        :param print_func: the function to use to print, allows printing to be disabled if necessary,
+        using `print_func=lambda x, end=None, flush=None: None`.
         """
-        def _cprint(*args, **kwargs):
+        def _print(*args, **kwargs):
             if sys.version_info[:2] < (3, 3):
                 kwargs.pop('flush', None)
-            cprint(*args, **kwargs)
-        _cprint("Cleaning up\r\n", end="", flush=True)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                print_func(*args, **kwargs)
+        _print("Cleaning up\r\n", end="", flush=True)
         zero(self.__o2_pass)
         self._pinentry.close()
         if not self._login_ssh.closed:
-            _cprint("Closing login_ssh\n", end="", flush=True)
+            _print("Closing login_ssh\n", end="", flush=True)
             self._login_ssh.close(force=True)
         if not self._second_ssh.closed:
-            _cprint("Closing second_ssh\n", end="", flush=True)
+            _print("Closing second_ssh\n", end="", flush=True)
             self._second_ssh.close(force=True)
 
     def term(self, *__):
@@ -383,7 +382,7 @@ class JupyterO2(object):
             try:
                 self.close()
             except RuntimeError:  # printing from signal can cause RuntimeError: reentrant call
-                self.close(cprint=lambda x, end=None, flush=None: None)
+                self.close(print_func=lambda x, end=None, flush=None: None)
             sys.stdout.close()
             sys.stderr.close()
             sys.stdin.close()
@@ -395,7 +394,7 @@ def main():
     # load the config file
     config_mgr = ConfigManager()
     cfg_locations = config_mgr.read()
-    config = config_mgr.get_config()
+    config = config_mgr.config
 
     # parse the command line arguments
     pargs = config_mgr.get_arg_parser().parse_args()
@@ -407,9 +406,9 @@ def main():
         return 0
 
     # generate the config file and exit
-    do_gen_config = pargs.pop('generate_config')
-    if do_gen_config is not None:
-        cfg_path = generate_config(do_gen_config)
+    gen_config = pargs.pop('generate_config')
+    if gen_config is not None:
+        cfg_path = generate_config_file(gen_config)
         print('Generated config file at:\n    {}'.format(cfg_path))
         return 0
 

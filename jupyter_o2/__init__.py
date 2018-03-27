@@ -30,7 +30,7 @@ from .config_manager import (
     CFG_DIR,
     CFG_SEARCH_LOCATIONS,
     ConfigManager,
-    generate_config,
+    generate_config_file,
     get_base_arg_parser
 )
 
