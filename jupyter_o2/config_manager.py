@@ -114,9 +114,7 @@ class ConfigManager(object):
         self.config = ConfigParser(defaults=JO2_DEFAULTS_STR)
         self.config.add_section('Defaults')
         self.config.add_section('Settings')
-
-    def read(self):
-        return self.config.read(CFG_SEARCH_LOCATIONS)
+        self.cfg_locations = self.config.read(CFG_SEARCH_LOCATIONS)
 
     def get_arg_parser(self):
         """Get an arg parser populated with this ConfigManager's defaults."""
