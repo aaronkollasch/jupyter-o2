@@ -81,9 +81,11 @@ class CustomSSH(pxssh.pxssh):
         if check_exit_status and not silence:
             exit_code = self.get_exit_code()
             exit_message = self.before.split(b'\n')[-2].strip().decode()
+            if not exit_message:
+                exit_message = "<no message>"
             if exit_code > 0:
                 logger = logging.getLogger(__name__)
-                logger.warning("ERROR: in: {0}\n       code {1}: {2}".format(s, exit_code, exit_message))
+                logger.warning("ERROR: in: {0}\n    code {1}: {2}".format(s, exit_code, exit_message))
         return value, prompt
 
     def sendpass(self, password, restore_logs=False):
@@ -171,6 +173,7 @@ class JupyterO2(object):
             keepalive=False,
             keepxquartz=False,
             forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS"),
+            no_browser=False,
             forwardx11trusted=False,
     ):
         self.logger = logging.getLogger(__name__)
@@ -180,6 +183,7 @@ class JupyterO2(object):
         self.subcommand = subcommand
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
+        self.no_browser = no_browser
 
         if config is None:
             config = ConfigManager().config
@@ -311,9 +315,10 @@ class JupyterO2(object):
         print("\nJupyter is ready! Access at:\n{}".format(jp_site))
 
         # open Jupyter in browser
-        self.logger.info("Opening in browser...")
-        if not self.open_in_browser(jp_site):
-            self.logger.error("Please open the Jupyter page manually.")
+        if not self.no_browser:
+            self.logger.info("Opening in browser...")
+            if not self.open_in_browser(jp_site):
+                self.logger.error("Please open the Jupyter page manually.")
 
         # quit XQuartz because the application is not necessary to keep the connection open.
         if not self.keep_xquartz:

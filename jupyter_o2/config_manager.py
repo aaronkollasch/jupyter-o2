@@ -94,7 +94,9 @@ def get_base_arg_parser():
                         help="do not quit XQuartz")
     parser.add_argument("--force-getpass", dest="forcegetpass", action='store_true',
                         default=JO2_DEFAULTS.get("FORCE_GETPASS"),
-                        help="Force the use of getpass instead of pinentry for password entry")
+                        help="use getpass instead of pinentry for password entry")
+    parser.add_argument('--no-browser', dest="no_browser", action='store_true',
+                        help="run without opening the browser")
     parser.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False,
                         action='store_true',
                         help="enable trusted X11 forwarding, equivalent to ssh -Y")
