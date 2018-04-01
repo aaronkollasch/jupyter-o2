@@ -130,14 +130,21 @@ class CustomSSH(pxssh.pxssh):
 
 
 class FilteredOut(object):
-    def __init__(self, txtctrl, by):
+    def __init__(self, txtctrl, by, reactions=None):
         self.txtctrl = txtctrl
         self.by = by
+        self.reactions = reactions
 
     def write(self, bytestr):
         try:
-            if bytestr[:len(self.by)] == self.by:
+            if isinstance(self.by, list) and any(by in bytestr for by in self.by):
                 self.txtctrl.write(bytestr)
+            elif bytestr[:len(self.by)] == self.by:
+                self.txtctrl.write(bytestr)
+            if self.reactions is not None:
+                for key in self.reactions.keys():
+                    if key in bytestr:
+                        self.reactions[key]()
         except IndexError:
             pass
 
@@ -358,7 +365,9 @@ class JupyterO2(object):
         # enter an interactive session
         self.logger.info("Starting an interactive session.")
         s.PROMPT = PASSWORD_REQUEST_PATTERN
-        s.logfile_read = FilteredOut(STDOUT_BUFFER, b'srun:')
+        s.logfile_read = FilteredOut(
+            STDOUT_BUFFER, [b'srun:', b'authenticity'], reactions={b'authenticity': self.close_on_known_hosts_error}
+        )
         if not s.sendlineprompt(self.srun_call, silence=False)[1]:
             self.logger.error("The timeout ({}) was reached without receiving a password request.".format(s.timeout))
             return False
@@ -372,6 +381,12 @@ class JupyterO2(object):
         self.logger.info("Node: {}\n".format(jp_interactive_host))
 
         return jp_interactive_host
+
+    def close_on_known_hosts_error(self):
+        self.logger.critical("\nCould not connect to interactive session.\n"
+                             "For some reason, the requested node is not recognized in ssh_known_hosts.\n"
+                             "If on O2, check with HMS RC.")
+        self.term()
     
     def ssh_into_interactive_node(self, s, interactive_host):
         """SSH into an interactive node from within the server and forward its connection
