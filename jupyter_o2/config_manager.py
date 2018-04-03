@@ -83,7 +83,7 @@ def generate_config_file(config_dir=None):
 
 def get_base_arg_parser():
     parser = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
-    parser.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch")
+    parser.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch (optional)")
     parser.add_argument("-u", "--user", default=JO2_DEFAULTS.get("DEFAULT_USER"), type=str,
                         help="your O2 username")
     parser.add_argument("--host", type=str, default=JO2_DEFAULTS.get("DEFAULT_HOST"),
@@ -118,8 +118,8 @@ def get_base_arg_parser():
                         help="show the current version and exit")
     parser.add_argument('--paths', action='store_true',
                         help="show configuration paths and exit")
-    parser.add_argument('--generate-config', metavar="DIR", type=str, nargs='?', default=None, const=True,
-                        help="generate the configuration file, optionally in the specified directory")
+    parser.add_argument('--generate-config', action='store_true',
+                        help="generate the default configuration file")
     return parser
 
 

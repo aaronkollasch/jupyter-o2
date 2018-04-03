@@ -488,7 +488,7 @@ def main():
 
     # generate the config file and exit
     gen_config = pargs.pop('generate_config')
-    if gen_config is not None:
+    if gen_config:
         cfg_path = generate_config_file(gen_config)
         print('Generated config file at:\n    {}'.format(cfg_path))
         return 0
@@ -522,12 +522,12 @@ def main():
     # start Jupyter-O2
     print_pargs = {i: pargs[i] for i in pargs if i not in ["keepxquartz", "forcegetpass", "forwardx11trusted"]}
     logger.debug(
-        "\n ".join(
+        "\n    ".join(
             ["Running Jupyter-O2 with options:"] +
             [
-                "   " +
                 " " * (max(map(len, print_pargs.keys())) - len(pair[0])) +
-                ": ".join(str(item) for item in pair) for pair in print_pargs.items()
+                ": ".join(str(item) for item in pair)
+                for pair in print_pargs.items()
             ]
         ) +
         "\n"

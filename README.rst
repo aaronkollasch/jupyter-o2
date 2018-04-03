@@ -16,9 +16,13 @@ Next, install Jupyter-O2.
 
     $ pip install jupyter-o2
 
-Then, run ``jupyter-o2 --generate-config`` and open the generated file,  ``jupyter-o2.cfg``.
+Then, generate the config file.
 
-Edit ``jupyter-o2.cfg`` according to its instructions, particularly the
+.. code-block:: console
+
+    jupyter-o2 --generate-config
+
+Follow the path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
 ``DEFAULT_USER``, ``MODULE_LOAD_CALL``, and ``SOURCE_JUPYTER_CALL`` fields.
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
