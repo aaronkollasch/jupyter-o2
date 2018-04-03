@@ -5,6 +5,7 @@ import logging
 from time import sleep
 import subprocess
 import shlex
+import ast
 try:
     from shlex import quote
 except ImportError:
@@ -17,13 +18,6 @@ def join_cmd(cmd, args_string):
     return ' '.join([cmd] + [quote(item) for item in shlex.split(args_string)])
 
 
-DNS_SERVER_GROUPS = [ # dns servers that have entries for loginXX.o2.rc.hms.harvard.edu
-    ["134.174.17.6", "134.174.141.2"],  # HMS nameservers
-    ["128.103.1.1", "128.103.201.100", "128.103.200.101"],  # HU nameservers
-]
-# test that you can access the login nodes with nslookup login01.o2.rc.hms.harvard.edu <DNS>
-
-
 def check_dns(hostname, dns_groups=None):
     """Check if hostname is reachable by any group of dns servers.
 
@@ -33,12 +27,15 @@ def check_dns(hostname, dns_groups=None):
         import dns.resolver
     except ImportError:
         dns = None
+    from .config_manager import ConfigManager
 
     if dns is not None:
         if dns_groups is None:
-            dns_groups = [
-                dns.resolver.Resolver().nameservers  # current nameservers, checked first
-            ] + DNS_SERVER_GROUPS
+            dns_server_groups = ast.literal_eval(
+                ConfigManager().config.get('Remote Environment Settings', "DNS_SERVER_GROUPS")
+            )
+
+            dns_groups = [dns.resolver.Resolver().nameservers] + dns_server_groups
 
         dns_err_code = 0
         for dns_servers in dns_groups:

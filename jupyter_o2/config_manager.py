@@ -7,6 +7,12 @@ except ImportError:
     from configparser import ConfigParser
 import argparse
 
+DNS_SERVER_GROUPS = [  # dns servers that have entries for loginXX.o2.rc.hms.harvard.edu
+    ["134.174.17.6", "134.174.141.2"],  # HMS nameservers
+    ["128.103.1.1", "128.103.201.100", "128.103.200.101"],  # HU nameservers
+]
+# test that you can access the login nodes (on macs) with nslookup login01.o2.rc.hms.harvard.edu <DNS>
+
 JO2_DEFAULTS = {
     "DEFAULT_USER": "",
     "DEFAULT_HOST": "o2.hms.harvard.edu",
@@ -15,12 +21,18 @@ JO2_DEFAULTS = {
     "DEFAULT_JP_MEM": "1G",
     "DEFAULT_JP_CORES": 1,
     "DEFAULT_JP_SUBCOMMAND": "notebook",
+
     "MODULE_LOAD_CALL": "",
     "SOURCE_JUPYTER_CALL": "",
     "INIT_JUPYTER_COMMANDS": "",
     "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --no-browser",
     "PORT_RETRIES": 10,
     "FORCE_GETPASS": False,
+
+    "USE_INTERNAL_INTERACTIVE_SESSION": True,
+    "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash",
+    "PASSWORD_REQUEST_PATTERN": "[\w-]+@[\w-]+'s password: ",
+    "DNS_SERVER_GROUPS": DNS_SERVER_GROUPS,
 }
 JO2_DEFAULTS_STR = {key: str(value) for key, value in JO2_DEFAULTS.items()}
 
@@ -116,6 +128,7 @@ class ConfigManager(object):
         self.config = ConfigParser(defaults=JO2_DEFAULTS_STR)
         self.config.add_section('Defaults')
         self.config.add_section('Settings')
+        self.config.add_section('Remote Environment Settings')
         self.cfg_locations = self.config.read(CFG_SEARCH_LOCATIONS)
 
     def get_arg_parser(self):

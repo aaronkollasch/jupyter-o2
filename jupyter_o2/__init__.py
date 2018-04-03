@@ -2,7 +2,6 @@ from .version import __version__, version_info
 from .utils import (
     eprint,
     join_cmd,
-    DNS_SERVER_GROUPS,
     check_dns,
     try_quit_xquartz,
     get_xquartz_open_windows,
@@ -29,6 +28,7 @@ from .config_manager import (
     CFG_FILENAME,
     CFG_DIR,
     CFG_SEARCH_LOCATIONS,
+    DNS_SERVER_GROUPS,
     ConfigManager,
     generate_config_file,
     get_base_arg_parser

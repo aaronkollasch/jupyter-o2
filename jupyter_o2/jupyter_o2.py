@@ -19,12 +19,7 @@ from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config_file, ConfigManager)
 
-SRUN_CALL_FORMAT = "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash"
-
-# patterns to search for in ssh
-SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{}[\w\-./%?=]+)\s"  # {} formatted with jupyter port
-PASSWORD_PATTERN = re.compile(b"[\w-]+@[\w-]+'s password: ")  # e.g. "user@compute-e-16-175's password: "
-PASSWORD_REQUEST_PATTERN = re.compile(b"[\w-]+@[\w-]+'s password: ")  # e.g. "user@compute-e-16-175's password: "
+JP_SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{port}[\w\-./%?=]+)\s"
 
 if hasattr(sys.stdout, 'buffer'):
     STDOUT_BUFFER = sys.stdout.buffer
@@ -200,6 +195,9 @@ class JupyterO2(object):
         init_jupyter_commands = config.get('Settings', 'INIT_JUPYTER_COMMANDS')
         jp_call_format = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
 
+        srun_call_format = config.get('Remote Environment Settings', 'INTERACTIVE_CALL_FORMAT')
+        password_request_pattern = config.get('Remote Environment Settings', 'PASSWORD_REQUEST_PATTERN')
+
         # find an open port starting with the supplied port
         success = False
         for port in range(jp_port, jp_port + port_retries + 1):
@@ -217,11 +215,14 @@ class JupyterO2(object):
             raise JupyterO2Error("Could not find an available port.")
         self.logger.debug("")
 
-        self.srun_call = SRUN_CALL_FORMAT.format(
+        self.run_internal_session = config.getboolean('Remote Environment Settings', 'USE_INTERNAL_INTERACTIVE_SESSION')
+        self.srun_call = srun_call_format.format(
             time=quote(jp_time),
             mem=quote(jp_mem),
             cores=jp_cores
         )
+        if self.run_internal_session:
+            self.logger.debug("Will start internal interactive session with command:\n    {}".format(self.srun_call))
 
         self.init_jupyter_commands = []
         if module_load_call:
@@ -230,7 +231,7 @@ class JupyterO2(object):
             self.init_jupyter_commands.append(join_cmd("source", source_jupyter_call))
         if init_jupyter_commands:
             self.init_jupyter_commands.extend(init_jupyter_commands.strip().split('\n'))
-        self.logger.debug("\n    ".join(["Will initialize Jupyter with commands:"] + self.init_jupyter_commands) + "\n")
+        self.logger.debug("\n    ".join(["Will initialize Jupyter with commands:"] + self.init_jupyter_commands))
 
         self.jp_call = jp_call_format.format(
             subcommand=quote(subcommand),
@@ -238,7 +239,9 @@ class JupyterO2(object):
         )
         self.logger.debug("Will run Jupyter with command:\n    {}\n".format(self.jp_call))
 
-        self.__o2_pass = ""
+        self.password_request_pattern = re.compile(password_request_pattern.encode('utf-8'))
+
+        self.__pass = ""
         self._pinentry = Pinentry(pinentry_path=PINENTRY_PATH, fallback_to_getpass=True, force_getpass=forcegetpass)
 
         login_ssh_options = {
@@ -268,7 +271,7 @@ class JupyterO2(object):
 
     def ask_for_pin(self):
         """Prompt for an O2 password"""
-        self.__o2_pass = self._pinentry.ask(
+        self.__pass = self._pinentry.ask(
             prompt="Enter your passphrase: ",
             description="Connect to O2 server for jupyter {}".format(self.subcommand),
             error="No password entered",
@@ -276,7 +279,6 @@ class JupyterO2(object):
         )
         self._pinentry.close()
 
-    # TODO: provide the option for connections to servers that do not require an internal session
     def connect(self):
         """Connect to Jupyter
 
@@ -288,7 +290,7 @@ class JupyterO2(object):
         """
         # start login ssh
         self.logger.info("Connecting to {}@{}".format(self.user, self.host))
-        if not self._login_ssh.login(self.host, self.user, self.__o2_pass):
+        if not self._login_ssh.login(self.host, self.user, self.__pass):
             return False
         self.logger.debug("Connected.")
 
@@ -296,25 +298,28 @@ class JupyterO2(object):
         jp_login_host = self._login_ssh.get_hostname()
         self.logger.info("Hostname: {}\n".format(jp_login_host))
 
-        # TODO: if use_internal_interactive_session:
-        # start an interactive session and get the name of the interactive node
-        jp_interactive_host = self.start_interactive_session(self._login_ssh)
-        if jp_interactive_host is False:
-            return False
+        if self.run_internal_session:
+            # start an interactive session and get the name of the interactive node
+            jp_interactive_host = self.start_interactive_session(self._login_ssh)
+            if jp_interactive_host is False:
+                return False
+        else:
+            jp_interactive_host = None
 
         # start jupyter and get the URL
         jp_site = self.start_jupyter(self._login_ssh)
         
-        # TODO: if use_internal_interactive_session:
-        # log in to the second ssh
-        self.logger.info("\nStarting a second connection to the login node.")
-        if not self._second_ssh.login(jp_login_host, self.user, self.__o2_pass):
-            return False
-        self.logger.debug("Connected.")
+        if self.run_internal_session:
+            # log in to the second ssh
+            self.logger.info("\nStarting a second connection to the login node.")
+            if not self._second_ssh.login(jp_login_host, self.user, self.__pass):
+                return False
+            self.logger.debug("Connected.")
 
-        # ssh into the running interactive node
-        if not self.ssh_into_interactive_node(self._second_ssh, jp_interactive_host):
-            return False
+            # ssh into the running interactive node
+            if not self.ssh_into_interactive_node(self._second_ssh, jp_interactive_host):
+                return False
+            self._second_ssh.logfile_read = STDOUT_BUFFER  # print any errors/output from self._second_ssh to stdout
 
         # password is not needed anymore
         self.clear_pass()
@@ -346,11 +351,13 @@ class JupyterO2(object):
         s.logfile_read = STDOUT_BUFFER
 
         # get the address jupyter is running at
-        site_pat = re.compile(SITE_PATTERN_FORMAT.format(self.jp_port).encode('utf-8'))
+        site_pat = re.compile(JP_SITE_PATTERN_FORMAT.format(port=self.jp_port).encode('utf-8'))
+        prompt = s.PROMPT
         s.PROMPT = site_pat
         if not s.prompt():  # timed out; failed to launch jupyter
             self.logger.error("Failed to launch jupyter. (timed out, {})".format(s.timeout))
             return False
+        s.PROMPT = prompt
         jp_site = s.after.decode('utf-8').strip()
         self.logger.debug("Jupyter {} started.".format(self.subcommand))
 
@@ -358,20 +365,19 @@ class JupyterO2(object):
 
     def start_interactive_session(self, s):
         """Start an interactive session in the given CustomSSH instance
-
         :param s: an active CustomSSH
         :return: the name of the interactive node, or False on failure
         """
         # enter an interactive session
         self.logger.info("Starting an interactive session.")
-        s.PROMPT = PASSWORD_REQUEST_PATTERN
+        s.PROMPT = self.password_request_pattern
         s.logfile_read = FilteredOut(
             STDOUT_BUFFER, [b'srun:', b'authenticity'], reactions={b'authenticity': self.close_on_known_hosts_error}
         )
         if not s.sendlineprompt(self.srun_call, silence=False)[1]:
             self.logger.error("The timeout ({}) was reached without receiving a password request.".format(s.timeout))
             return False
-        s.sendpass(self.__o2_pass)
+        s.sendpass(self.__pass)
 
         # within interactive session: get the name of the interactive node
         s.PROMPT = s.UNIQUE_PROMPT
@@ -390,19 +396,19 @@ class JupyterO2(object):
     
     def ssh_into_interactive_node(self, s, interactive_host):
         """SSH into an interactive node from within the server and forward its connection
-
         :param s: an active CustomSSH
         :param interactive_host: the name of the interactive node
         :return: True if the connection is successful
         """
         self.logger.info("Connecting to the interactive node.")
         jp_interactive_command = "ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, interactive_host)
-        s.PROMPT = PASSWORD_REQUEST_PATTERN
+        prompt = s.PROMPT
+        s.PROMPT = self.password_request_pattern
         if not s.sendlineprompt(jp_interactive_command, silence=False)[1]:
             self.logger.error("The timeout ({}) was reached.".format(s.timeout))
             return False
-        s.sendpass(self.__o2_pass)
-        s.logfile_read = STDOUT_BUFFER  # print any errors/output from self.__second_ssh to stdout
+        s.PROMPT = prompt
+        s.sendpass(self.__pass)
         self.logger.debug("Connected.")
         return True
 
@@ -425,8 +431,8 @@ class JupyterO2(object):
             self._login_ssh.interact(output_filter=interact_filter.exit_on_find)
 
     def clear_pass(self):
-        cleared = zero(self.__o2_pass)
-        self.__o2_pass = None
+        cleared = zero(self.__pass)
+        self.__pass = None
         return cleared
 
     def close(self, print_func=print, *__):
@@ -514,12 +520,14 @@ def main():
         pargs['subcommand'] = default_jp_subcommand
 
     # start Jupyter-O2
+    print_pargs = {i: pargs[i] for i in pargs if i not in ["keepxquartz", "forcegetpass", "forwardx11trusted"]}
     logger.debug(
         "\n ".join(
             ["Running Jupyter-O2 with options:"] +
             [
-                " " * (max(map(len, pargs.keys())) - len(pair[0])) +
-                ": ".join(str(item) for item in pair) for pair in pargs.items()
+                "   " +
+                " " * (max(map(len, print_pargs.keys())) - len(pair[0])) +
+                ": ".join(str(item) for item in pair) for pair in print_pargs.items()
             ]
         ) +
         "\n"
