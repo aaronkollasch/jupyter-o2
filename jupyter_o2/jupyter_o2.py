@@ -538,3 +538,5 @@ def main():
     except JupyterO2Exception as err:
         logger.error("{0}: {1}".format(err.__class__.__name__, err))
         return 1
+
+    return 0

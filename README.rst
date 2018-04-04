@@ -14,7 +14,7 @@ Next, install Jupyter-O2.
 
 .. code-block:: console
 
-    $ pip install jupyter-o2
+    pip install jupyter-o2
 
 Then, generate the config file.
 
@@ -33,19 +33,22 @@ Usage
 ------------------------------
 .. code-block:: console
 
-    $ jupyter-o2 [subcommand]
+    jupyter-o2 [subcommand]
 
 Examples: ``jupyter-o2 notebook`` or ``jupyter-o2 lab``
 (try it with `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__!)
 
-If Jupyter is installed on your machine,
-Jupyter-O2 can also be run as a Jupyter subcommand, e.g. ``jupyter o2 notebook``.
+If Jupyter is installed on your machine, Jupyter-O2 can also be run as a Jupyter subcommand:
+
+.. code-block:: console
+
+    jupyter o2 notebook
 
 For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Requirements and compatibility
 ------------------------------
-* python 2.7 and 3.6 have been tested.
+* python 2.7 or 3.6
 * pexpect.pxssh
 * POSIX: Jupyter-O2 has been tested on MacOS. It may work on Linux, and on Windows it should
   require Cygwin and Cygwin's version of Python.
