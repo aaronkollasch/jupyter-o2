@@ -22,7 +22,7 @@ Then, generate the config file.
 
     jupyter-o2 --generate-config
 
-Follow the path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
+Follow the printed path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
 ``DEFAULT_USER``, ``MODULE_LOAD_CALL``, and ``SOURCE_JUPYTER_CALL`` fields.
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
@@ -36,13 +36,13 @@ Usage
     jupyter-o2 [subcommand]
 
 Examples: ``jupyter-o2 notebook`` or ``jupyter-o2 lab``
-(try it with `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__!)
+(try `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__!)
 
 If Jupyter is installed on your machine, Jupyter-O2 can also be run as a Jupyter subcommand:
 
 .. code-block:: console
 
-    jupyter o2 notebook
+    jupyter o2 lab
 
 For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
