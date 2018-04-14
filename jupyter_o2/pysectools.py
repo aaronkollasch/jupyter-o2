@@ -49,7 +49,10 @@ def zero(s):
 
 
 def cmd_exists(cmd):
-    return subprocess.call(["type", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+    try:
+        return subprocess.call(["type", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True) == 0
+    except Exception:
+        return False
 
 
 class PinentryException(Exception):
