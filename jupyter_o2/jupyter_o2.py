@@ -226,8 +226,10 @@ class JupyterO2(object):
 
         self.init_jupyter_commands = []
         if module_load_call:
+            module_load_call = module_load_call.strip("module load ")
             self.init_jupyter_commands.append(join_cmd("module load", module_load_call))
         if source_jupyter_call:
+            source_jupyter_call = source_jupyter_call.strip("source ")
             self.init_jupyter_commands.append(join_cmd("source", source_jupyter_call))
         if init_jupyter_commands:
             self.init_jupyter_commands.extend(init_jupyter_commands.strip().split('\n'))
