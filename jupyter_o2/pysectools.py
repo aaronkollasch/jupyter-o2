@@ -24,7 +24,6 @@ else:
 # - updated Pinentry for python 3:                              #
 #   - uses bytestrings                                          #
 #   - flushes stdin after writing                               #
-# - removed shell=True from subprocess.call()                   #
 # - uses a print function that accepts the flush parameter      #
 #################################################################
 
@@ -50,7 +49,7 @@ def zero(s):
 
 def cmd_exists(cmd):
     try:
-        return subprocess.call(["type", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True) == 0
+        return subprocess.call("type " + cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True) == 0
     except Exception:
         return False
 

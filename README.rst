@@ -52,7 +52,4 @@ Requirements and compatibility
 * pexpect.pxssh
 * POSIX: Jupyter-O2 has been tested on MacOS and Linux, while on Windows it should
   require Cygwin and Cygwin's version of Python.
-
-Optional installs
-------------------------------
-* pinentry (a command line tool used instead of getpass)
+* pinentry (suggested)

@@ -22,8 +22,11 @@ class TestPysectools(unittest.TestCase):
         self.assertTrue(zero(s))
         self.assertEqual(s, '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
-    def test_cmd_exists(self):
+    def test_cmd_exists_positive(self):
         self.assertTrue(cmd_exists('ls'))
+
+    def test_cmd_exists_negative(self):
+        self.assertFalse(cmd_exists('notacommand_kjnbvc'))
 
     @mock.patch('getpass.getpass')
     @mock.patch('os.isatty')
