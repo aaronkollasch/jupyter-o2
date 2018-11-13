@@ -35,7 +35,7 @@ from .config_manager import (
 )
 
 __author__ = "Aaron Kollasch"
-__date__ = "2018-03-18"
+__date__ = "2018-11-13"
 __copyright__ = "Copyright 2017-2018, Aaron Kollasch"
 __email__ = "awkollasch@gmail.com"
-__status__ = "Beta"
+__status__ = "Production"

@@ -31,6 +31,8 @@ JO2_DEFAULTS = {
 
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
     "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash",
+    "INTERACTIVE_REQUIRES_PASSWORD": False,
+    "INTERNAL_SSH_REQUIRES_PASSWORD": False,
     "PASSWORD_REQUEST_PATTERN": "[\w-]+@[\w-]+'s password: ",
     "DNS_SERVER_GROUPS": DNS_SERVER_GROUPS,
 }
