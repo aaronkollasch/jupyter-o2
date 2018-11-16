@@ -22,8 +22,8 @@ Since Jupyter-O2 runs Jupyter on an interactive node, bash notebooks
 can be used to document your session on O2, including commands and
 outputs, without using SLURM to submit additional jobs.
 
-``%%bash`` can be used to run a ``bash`` command in kernels that support
-it, but it does not remember your working directory or other variables
+``%%bash`` can be used to run a ``bash`` command in the default kernel,
+but it does not remember your working directory or other variables
 from previous cells.
 
 Just be sure that your node has sufficient memory for the desired tasks,
@@ -50,7 +50,7 @@ For example, the connection could time out or the node could exceed its time lim
 `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-While JupyterLab is currently in beta, it is now
+JupyterLab is now
 `ready for users <https://blog.jupyter.org/jupyterlab-is-ready-for-users-5a6f039b8906>`__.
 
 JupyterLab offers a more complete environment than Jupyter Notebook.
@@ -62,21 +62,10 @@ Troubleshooting
 --------------------------------------------------------------------------------------------------------------------
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-jupyter-o2.cfg
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-``jupyter-o2.cfg`` should be installed upon setup.
-If not, you may also copy ``jupyter_o2/jupyter-o2.cfg`` into any location in ``jupyter-o2 --paths``.
-
-If upgrading from version 0.1.x to 0.2.x, add ``DEFAULT_USER = <user>`` to ``jupyter-o2.cfg``
-under ``[Defaults]``, substituting your O2 username for ``<user>``.
-
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 nbsignatures.db
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If jupyter hangs when opening notebooks for the first time in any
+If Jupyter hangs when opening notebooks for the first time in any
 session, and the console shows error messages such as:
 
 .. code-block::
@@ -84,7 +73,7 @@ session, and the console shows error messages such as:
     > The signatures database cannot be opened; maybe it is corrupted or encrypted.
     > Failed commiting signatures database to disk.
 
-Disabling the signatures database may be the best option, since there is
+Disabling Jupyter's signatures database may be the best option, since there is
 no non-networked file system shared between all the interactive compute
 nodes.
 
