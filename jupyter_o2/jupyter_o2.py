@@ -64,9 +64,9 @@ class CustomSSH(pxssh.pxssh):
         return super(CustomSSH, self).sendline(s)
 
     def sendlineprompt(self, s='', timeout=-1, silence=True, check_exit_status=False):
-        """Send s with sendline and then prompt() once.
+        """Send s with sendline() and then prompt() once.
         :param s: the string to send
-        :param timeout: number of seconds to wait for prompt; use default if -1
+        :param timeout: number of seconds to wait for prompt; use default if -1; no timeout if None
         :param silence: silence printing of s to debug log
         :param check_exit_status: check the exit status and print a warning if the command exited with an error
         :return: output of sendline(), output of prompt()
@@ -101,6 +101,7 @@ class CustomSSH(pxssh.pxssh):
         """
         before, match, after = self.before, self.match, self.after
         self.sendlineprompt("echo $?", silence=True)
+        # TODO: use regex to find the exit code instead of splitting
         exit_code = int(self.before.split(b'\n')[1].strip())
         self.before, self.match, self.after = before, match, after
         return exit_code
@@ -195,7 +196,9 @@ class JupyterO2(object):
         init_jupyter_commands = config.get('Settings', 'INIT_JUPYTER_COMMANDS')
         jp_call_format = config.get('Settings', 'RUN_JUPYTER_CALL_FORMAT')
 
+        self.run_internal_session = config.getboolean('Remote Environment Settings', 'USE_INTERNAL_INTERACTIVE_SESSION')
         srun_call_format = config.get('Remote Environment Settings', 'INTERACTIVE_CALL_FORMAT')
+        self.srun_timeout = config.get('Remote Environment Settings', 'START_INTERACTIVE_SESSION_TIMEOUT')
         self.srun_usepass = config.getboolean('Remote Environment Settings', 'INTERACTIVE_REQUIRES_PASSWORD')
         self.internal_ssh_usepass = config.getboolean('Remote Environment Settings', 'INTERNAL_SSH_REQUIRES_PASSWORD')
         password_request_pattern = config.get('Remote Environment Settings', 'PASSWORD_REQUEST_PATTERN')
@@ -218,12 +221,18 @@ class JupyterO2(object):
             raise JupyterO2Error("Could not find an available port.")
         self.logger.debug("")
 
-        self.run_internal_session = config.getboolean('Remote Environment Settings', 'USE_INTERNAL_INTERACTIVE_SESSION')
         self.srun_call = srun_call_format.format(
             time=quote(jp_time),
             mem=quote(jp_mem),
             cores=jp_cores
         )
+        try:
+            self.srun_timeout = int(self.srun_timeout)
+        except (ValueError, TypeError):
+            if self.srun_timeout in ["None", "inf"]:
+                self.srun_timeout = None
+            else:
+                self.srun_timeout = -1
         if self.run_internal_session:
             self.logger.debug("Will start internal interactive session with command:\n    {}".format(self.srun_call))
             self.logger.debug(
@@ -388,16 +397,17 @@ class JupyterO2(object):
                 STDOUT_BUFFER, [b'srun:', b'authenticity'], reactions={b'authenticity': self.close_on_known_hosts_error}
             )
 
+        timeout = s.timeout if self.srun_timeout == -1 else self.srun_timeout
         if sendpass:
             s.PROMPT = self.password_request_pattern
-            if not s.sendlineprompt(self.srun_call, silence=False)[1]:
-                self.logger.error("The timeout ({}) was reached without receiving a password request.".format(s.timeout))
+            if not s.sendlineprompt(self.srun_call, silence=False, timeout=self.srun_timeout)[1]:
+                self.logger.error("The timeout ({}) was reached without receiving a password request.".format(timeout))
                 return False
             s.sendpass(self.__pass)  # automatically silences all logfiles in s
         else:
             s.PROMPT = "\$"
-            if not s.sendlineprompt(self.srun_call, silence=False)[1]:
-                self.logger.error("The timeout ({}) was reached without receiving a prompt.".format(s.timeout))
+            if not s.sendlineprompt(self.srun_call, silence=False, timeout=self.srun_timeout)[1]:
+                self.logger.error("The timeout ({}) was reached without receiving a prompt.".format(timeout))
                 return False
             s.logfile_read = None
 
