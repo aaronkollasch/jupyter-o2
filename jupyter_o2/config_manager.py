@@ -29,6 +29,8 @@ JO2_DEFAULTS = {
     "PORT_RETRIES": 10,
     "FORCE_GETPASS": False,
 
+    "USE_TWO_FACTOR_AUTHENTICATION": False,
+    "TWO_FACTOR_AUTHENTICATION_CODE": [""],
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
     "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash",
     "START_INTERACTIVE_SESSION_TIMEOUT": -1,
@@ -103,6 +105,11 @@ def get_base_arg_parser():
     parser.add_argument("-c", "-n", dest="jp_cores", metavar="CORES", type=int,
                         default=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
                         help="cores to allocate for Jupyter")
+    parser.add_argument("--2fa", dest="use_2fa", default=False, action='store_true',
+                        help="Use two-factor authentication with SSH")
+    parser.add_argument("--2fa-code", dest="codes_2fa", metavar="C", type=str, nargs='+',
+                        default=JO2_DEFAULTS.get("TWO_FACTOR_AUTHENTICATION_CODE"),
+                        help="Code(s) to use with 2FA (1 for auto-push)")
     parser.add_argument("-k", "--keepalive", default=False, action='store_true',
                         help="keep interactive session alive after exiting Jupyter")
     parser.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False, action='store_true',
@@ -145,5 +152,7 @@ class ConfigManager(object):
             jp_mem=self.config.get('Defaults', 'DEFAULT_JP_MEM'),
             jp_cores=self.config.getint('Defaults', 'DEFAULT_JP_CORES'),
             forcegetpass=self.config.getboolean('Settings', 'FORCE_GETPASS'),
+            use_2fa=self.config.getboolean('Remote Environment Settings', 'USE_TWO_FACTOR_AUTHENTICATION'),
+            codes_2fa=self.config.get('Remote Environment Settings', 'TWO_FACTOR_AUTHENTICATION_CODE').split('\n'),
         )
         return parser

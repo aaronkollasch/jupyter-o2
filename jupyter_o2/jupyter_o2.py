@@ -28,6 +28,9 @@ else:
 
 
 class CustomSSH(pxssh.pxssh):
+    exit_interact = False
+    exit_interact_target = b'Success.'
+
     def login(self, server, username, password='', *args, **kwargs):
         """Login to an SSH server while checking the DNS, silencing logs,
         and suppressing the traceback for pxssh exceptions (such as incorrect password errors).
@@ -48,6 +51,48 @@ class CustomSSH(pxssh.pxssh):
         except pxssh.ExceptionPxssh as err:
             logger.error("pxssh error: {}".format(err))
             return False
+
+    def login_2fa(self, server, username, password='', codes=None, *args, **kwargs):
+        """Login to an SSH server using `login()` and then authenticate with a Duo prompt.
+        If ``code`` is `None` or `''`, run `interact()` so that the user can interact with the Duo prompt.
+        If ``code`` is not `None`, send ``code`` and continue automatically.
+        """
+        new_args = dict(sync_original_prompt=False, auto_prompt_reset=False, original_prompt="Duo")
+        # TODO allow variable prompt rather than "Duo" to allow for different 2FA schemes
+        if codes:
+            new_args['original_prompt'] = "Passcode or option"
+        if len(codes) > 1:
+            code = codes.pop(0)
+        else:
+            code = codes[0]
+        if kwargs:
+            kwargs.update(new_args)
+        else:
+            kwargs = new_args
+        result = self.login(server, username, password, *args, **kwargs)
+
+        if codes:
+            self.sendline(code)
+        else:
+            self.exit_interact = True
+            if sys.version_info >= (3,):
+                STDOUT_BUFFER.write(kwargs['original_prompt'].encode('latin-1'))
+            else:
+                STDOUT_BUFFER.write(kwargs['original_prompt'])
+            self.interact()
+            self.exit_interact = False
+        self.set_unique_prompt()
+        return result
+
+    def _spawn__interact_read(self, fd):
+        """Overrides __interact_read() in pexpect.spawn
+        Necessary to allow programmatic exit from interact().
+        """
+        out = os.read(fd, 1000)
+        if self.exit_interact is True and fd == self.child_fd and self.exit_interact_target in out:
+            escape_character = b''
+            return escape_character
+        return out
 
     def silence_logs(self):
         """Prevent printing into any logfile.
@@ -173,6 +218,8 @@ class JupyterO2(object):
             jp_time=JO2_DEFAULTS.get("DEFAULT_JP_TIME"),
             jp_mem=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
             jp_cores=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
+            use_2fa=False,
+            codes_2fa=JO2_DEFAULTS.get("TWO_FACTOR_AUTHENTICATION_CODE"),
             keepalive=False,
             keepxquartz=False,
             forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS"),
@@ -184,6 +231,8 @@ class JupyterO2(object):
         self.user = user
         self.host = host
         self.subcommand = subcommand
+        self.use_2fa = use_2fa
+        self.codes_2fa = codes_2fa
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
         self.no_browser = no_browser
@@ -203,6 +252,19 @@ class JupyterO2(object):
         self.internal_ssh_usepass = config.getboolean('Remote Environment Settings', 'INTERNAL_SSH_REQUIRES_PASSWORD')
         password_request_pattern = config.get('Remote Environment Settings', 'PASSWORD_REQUEST_PATTERN')
         self.password_request_pattern = re.compile(password_request_pattern.encode('utf-8'))
+
+        if self.use_2fa:
+            if self.codes_2fa:
+                if len(self.codes_2fa) == 1:
+                    print_code = self.codes_2fa[0]
+                    self.logger.debug("Using 2FA with automatic code {}".format(print_code))
+                else:
+                    print_code = ', '.join(self.codes_2fa)
+                    self.logger.debug("Using 2FA with automatic codes {}".format(print_code))
+            else:
+                self.logger.debug("Using 2FA with interactive prompt")
+        else:
+            self.logger.debug("Not using 2FA")
 
         # find an open port starting with the supplied port
         success = False
@@ -308,8 +370,12 @@ class JupyterO2(object):
         """
         # start login ssh
         self.logger.info("Connecting to {}@{}".format(self.user, self.host))
-        if not self._login_ssh.login(self.host, self.user, self.__pass):
-            return False
+        if self.use_2fa:
+            if not self._login_ssh.login_2fa(self.host, self.user, self.__pass, self.codes_2fa):
+                return False
+        else:
+            if not self._login_ssh.login(self.host, self.user, self.__pass):
+                return False
         self.logger.debug("Connected.")
 
         # get the login hostname
@@ -330,8 +396,12 @@ class JupyterO2(object):
         if self.run_internal_session:
             # log in to the second ssh
             self.logger.info("\nStarting a second connection to the login node.")
-            if not self._second_ssh.login(jp_login_host, self.user, self.__pass):
-                return False
+            if self.use_2fa:
+                if not self._second_ssh.login_2fa(jp_login_host, self.user, self.__pass, self.codes_2fa):
+                    return False
+            else:
+                if not self._second_ssh.login(jp_login_host, self.user, self.__pass):
+                    return False
             self.logger.debug("Connected.")
 
             # ssh into the running interactive node
@@ -559,7 +629,10 @@ def main():
         pargs['subcommand'] = default_jp_subcommand
 
     # start Jupyter-O2
-    print_pargs = {i: pargs[i] for i in pargs if i not in ["keepxquartz", "forcegetpass", "forwardx11trusted"]}
+    print_pargs = {
+        i: pargs[i] for i in pargs if i not in
+        ["use_2fa", "codes_2fa", "keepxquartz", "forcegetpass", "forwardx11trusted"]
+    }
     logger.debug(
         "\n    ".join(
             ["Running Jupyter-O2 with options:"] +
