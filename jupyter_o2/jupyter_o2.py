@@ -27,6 +27,18 @@ else:
     STDOUT_BUFFER = sys.stdout
 
 
+class JupyterO2Exception(Exception):
+    pass
+
+
+class JupyterO2Error(JupyterO2Exception):
+    pass
+
+
+class SSHError(JupyterO2Exception):
+    pass
+
+
 class CustomSSH(pxssh.pxssh):
     exit_interact = False
     exit_interact_target = b'Success.'
@@ -43,14 +55,12 @@ class CustomSSH(pxssh.pxssh):
             if dns_err == 1:
                 logger.debug("RUN: ssh {}@{}".format(username, host))
             elif dns_err == 2:
-                logger.error("Unable to resolve server.")
-                return False
+                raise SSHError("Unable to resolve server.")
             self.force_password = True
             self.silence_logs()
             return super(CustomSSH, self).login(host, username, password, *args, **kwargs)
         except pxssh.ExceptionPxssh as err:
-            logger.error("pxssh error: {}".format(err))
-            return False
+            raise SSHError("pxssh error: {}".format(err))
 
     def login_2fa(self, server, username, password='', codes=None, *args, **kwargs):
         """Login to an SSH server using `login()` and then authenticate with a Duo prompt.
@@ -196,14 +206,6 @@ class FilteredOut(object):
         if self.by in bytestr:
             sys.exit(0)
         return bytestr
-
-
-class JupyterO2Exception(Exception):
-    pass
-
-
-class JupyterO2Error(JupyterO2Exception):
-    pass
 
 
 class JupyterO2(object):
@@ -385,8 +387,6 @@ class JupyterO2(object):
         if self.run_internal_session:
             # start an interactive session and get the name of the interactive node
             jp_interactive_host = self.start_interactive_session(self._login_ssh)
-            if jp_interactive_host is False:
-                return False
         else:
             jp_interactive_host = None
 
@@ -430,6 +430,7 @@ class JupyterO2(object):
         """Start Jupyter in the given CustomSSH instance
         :param s: an active CustomSSH
         :return: the site where Jupyter can be accessed
+        :raises JupyterO2Error: if jupyter fails to launch or launch is not detected
         """
         # start jupyter
         self.logger.info("Starting Jupyter {}.".format(self.subcommand))
@@ -443,8 +444,7 @@ class JupyterO2(object):
         prompt = s.PROMPT
         s.PROMPT = site_pat
         if not s.prompt():  # timed out; failed to launch jupyter
-            self.logger.error("Failed to launch jupyter. (timed out, {})".format(s.timeout))
-            return False
+            raise JupyterO2Error("Failed to launch jupyter, or launch not detected. (timed out, {})".format(s.timeout))
         s.PROMPT = prompt
         jp_site = s.after.decode('utf-8').strip()
         self.logger.debug("Jupyter {} started.".format(self.subcommand))
@@ -456,7 +456,8 @@ class JupyterO2(object):
 
         :param s: an active CustomSSH
         :param sendpass: when connecting, wait for password request and then send password
-        :return: the name of the interactive node, or False on failure
+        :return: the name of the interactive node
+        :raises JupyterO2Error: if the session could not be started
         """
         # enter an interactive session
         self.logger.info("Starting an interactive session.")
@@ -471,14 +472,13 @@ class JupyterO2(object):
         if sendpass:
             s.PROMPT = self.password_request_pattern
             if not s.sendlineprompt(self.srun_call, silence=False, timeout=self.srun_timeout)[1]:
-                self.logger.error("The timeout ({}) was reached without receiving a password request.".format(timeout))
-                return False
+                raise JupyterO2Error(
+                    "The timeout ({}) was reached without receiving a password request.".format(timeout))
             s.sendpass(self.__pass)  # automatically silences all logfiles in s
         else:
-            s.PROMPT = "\$"
+            s.PROMPT = "\$"  # TODO allow customization if user has different prompt
             if not s.sendlineprompt(self.srun_call, silence=False, timeout=self.srun_timeout)[1]:
-                self.logger.error("The timeout ({}) was reached without receiving a prompt.".format(timeout))
-                return False
+                raise JupyterO2Error("The timeout ({}) was reached without receiving a prompt.".format(timeout))
             s.logfile_read = None
 
         # within interactive session: get the name of the interactive node
@@ -503,6 +503,7 @@ class JupyterO2(object):
         :param interactive_host: the name of the interactive node
         :param sendpass: when connecting, wait for password request and then send password
         :return: True if the connection is successful
+        :raises JupyterO2Error: if the connection is not successful
         """
         self.logger.info("Connecting to the interactive node.")
         jp_interactive_command = "ssh -N -L {0}:127.0.0.1:{0} {1}".format(self.jp_port, interactive_host)
@@ -511,8 +512,7 @@ class JupyterO2(object):
             prompt = s.PROMPT
             s.PROMPT = self.password_request_pattern
             if not s.sendlineprompt(jp_interactive_command, silence=False)[1]:
-                self.logger.error("The timeout ({}) was reached.".format(s.timeout))
-                return False
+                raise JupyterO2Error("The timeout ({}) was reached.".format(s.timeout))
             s.PROMPT = prompt
             s.sendpass(self.__pass)
         else:
@@ -522,6 +522,8 @@ class JupyterO2(object):
         return True
 
     def open_in_browser(self, site):
+        if not isinstance(site, (str, bytes)):
+            return False
         try:
             webbrowser.open(site, new=2)
         except webbrowser.Error as error:
