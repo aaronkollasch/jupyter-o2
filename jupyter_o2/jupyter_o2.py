@@ -328,7 +328,7 @@ class JupyterO2(object):
 
         login_ssh_options = {
             "ForwardX11": "yes",
-            "LocalForward": "{} 127.0.0.1:{}".format(jp_port, jp_port),
+            "LocalForward": "{} 127.0.0.1:{}".format(self.jp_port, self.jp_port),
             "PubkeyAuthentication": "no"
         }
         if forwardx11trusted:
