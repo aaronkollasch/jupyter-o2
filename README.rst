@@ -34,7 +34,7 @@ Then, generate the config file.
     jupyter-o2 --generate-config
 
 Follow the printed path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
-``DEFAULT_USER``, ``MODULE_LOAD_CALL``, and ``SOURCE_JUPYTER_CALL`` fields.
+``DEFAULT_USER`` and ``INIT_JUPYTER_COMMANDS`` fields.
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
 
