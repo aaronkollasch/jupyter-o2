@@ -2,6 +2,17 @@
 Jupyter-O2
 ===========
 
+|PyPI version| |PyPI pyversions| |PyPI license|
+
+.. |PyPI version| image:: https://img.shields.io/pypi/v/jupyter-o2.svg
+   :target: https://pypi.python.org/pypi/jupyter-o2/
+
+.. |PyPI pyversions| image:: https://img.shields.io/pypi/pyversions/jupyter-o2.svg
+   :target: https://pypi.python.org/pypi/jupyter-o2/
+
+.. |PyPI license| image:: https://img.shields.io/pypi/l/jupyter-o2.svg
+   :target: https://pypi.python.org/pypi/jupyter-o2/
+
 Jupyter-O2 is a command-line tool that automatically runs Jupyter on
 Orchestra 2, an HPC cluster managed by the HMS Resesarch Computing group.
 
@@ -48,8 +59,7 @@ For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Requirements and compatibility
 ------------------------------
-* python 2.7 or 3.6
-* pexpect.pxssh
-* POSIX: Jupyter-O2 has been tested on MacOS and Linux, while on Windows it should
-  require Cygwin and Cygwin's version of Python.
+* python 2.7 or 3.6+
+* pexpect 4.5+
+* POSIX: Jupyter-O2 has not been tested on Windows, but it may work with Cygwin.
 * pinentry (suggested)
