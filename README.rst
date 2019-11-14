@@ -57,6 +57,10 @@ If Jupyter is installed on your machine, Jupyter-O2 can also be run as a Jupyter
 
 For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
+Two-factor authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Use the arguments ``--2fa --2fa-code 1`` to request Duo pushes automatically.
+
 Requirements and compatibility
 ------------------------------
 * python 2.7 or 3.6+
