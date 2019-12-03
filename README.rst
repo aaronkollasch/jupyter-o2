@@ -13,15 +13,18 @@ Jupyter-O2
 .. |PyPI license| image:: https://img.shields.io/pypi/l/jupyter-o2.svg
    :target: https://pypi.python.org/pypi/jupyter-o2/
 
-Jupyter-O2 is a command-line tool that automatically runs Jupyter on
-Orchestra 2, an HPC cluster managed by the HMS Resesarch Computing group.
+Jupyter-O2 is a command-line tool that remotely runs Jupyter on
+Orchestra 2 (O2), an HPC cluster managed by the HMS Research Computing group.
 
 Installation
 ------------------------------
 First, follow the `O2 wiki's procedure <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_
 to set up Jupyter for your account on O2.
+(If you have already installed Jupyter on O2, you can skip this step.)
 
-Next, install Jupyter-O2.
+Next, on your local machine:
+
+Install Jupyter-O2.
 
 .. code-block:: console
 
@@ -36,12 +39,16 @@ Then, generate the config file.
 Follow the printed path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
 ``DEFAULT_USER`` and ``INIT_JUPYTER_COMMANDS`` fields.
 
+Make sure you have X11 forwarding active (e.g. install `XQuartz <https://www.xquartz.org/>`_ if on a Mac).
+
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
 
 .. _jupyter-o2 tips: https://github.com/aaronkollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
 
 Usage
 ------------------------------
+Jupyter-O2 should be run locally using the following command format:
+
 .. code-block:: console
 
     jupyter-o2 [subcommand]
@@ -49,7 +56,10 @@ Usage
 Examples: ``jupyter-o2 notebook`` or ``jupyter-o2 lab``
 (try `JupyterLab <https://github.com/jupyterlab/jupyterlab>`__!)
 
-If Jupyter is installed on your machine, Jupyter-O2 can also be run as a Jupyter subcommand:
+This will automate the "Opening a Notebook" procedure
+on the `O2 wiki <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_.
+
+Note that if Jupyter is installed on your machine, Jupyter-O2 can also be run as a Jupyter subcommand:
 
 .. code-block:: console
 
