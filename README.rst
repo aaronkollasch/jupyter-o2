@@ -38,6 +38,7 @@ Then, generate the config file.
 
 Follow the printed path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
 ``DEFAULT_USER`` and ``INIT_JUPYTER_COMMANDS`` fields.
+You may copy this file to any of the locations listed by ``jupyter-o2 --paths`` if you wish.
 
 Make sure you have X11 forwarding active (e.g. install `XQuartz <https://www.xquartz.org/>`_ if on a Mac).
 
@@ -69,7 +70,8 @@ For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Two-factor authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Use the arguments ``--2fa --2fa-code 1`` to request Duo pushes automatically.
+If you see a two-factor authentication prompt when SSH'ing into O2, you will need to tell Jupyter-O2
+to request Duo pushes using the arguments ``--2fa --2fa-code 1``.
 
 Requirements and compatibility
 ------------------------------
