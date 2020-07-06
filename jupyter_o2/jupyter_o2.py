@@ -168,7 +168,12 @@ class CustomSSH(pxssh.pxssh):
         """
         before, match, after = self.before, self.match, self.after
         self.sendlineprompt("hostname", silence=True)
-        hostname = self.before.decode('utf-8').strip().split('\n')[1]
+        try:
+            hostname = self.before.decode('utf-8').strip().split('\n')[1]
+        except IndexError:
+            logger = logging.getLogger(__name__)
+            logger.debug("Hostname output: {}".format(repr(self.before)))
+            raise JupyterO2Error("Could not get hostname.")
         self.before, self.match, self.after = before, match, after
         return hostname
 
