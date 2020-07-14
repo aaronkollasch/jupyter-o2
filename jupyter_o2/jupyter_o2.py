@@ -173,7 +173,7 @@ class CustomSSH(pxssh.pxssh):
         except IndexError:
             logger = logging.getLogger(__name__)
             logger.debug("Hostname output: {}".format(repr(self.before)))
-            raise JupyterO2Error("Could not get hostname.")
+            raise JupyterO2Error("Could not get hostname.\nA communication error may have occured; try rerunning.")
         self.before, self.match, self.after = before, match, after
         return hostname
 
