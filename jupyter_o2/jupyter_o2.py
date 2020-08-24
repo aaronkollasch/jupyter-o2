@@ -255,6 +255,7 @@ class JupyterO2(object):
         self.run_internal_session = config.getboolean('Remote Environment Settings', 'USE_INTERNAL_INTERACTIVE_SESSION')
         srun_call_format = config.get('Remote Environment Settings', 'INTERACTIVE_CALL_FORMAT')
         self.srun_timeout = config.get('Remote Environment Settings', 'START_INTERACTIVE_SESSION_TIMEOUT')
+        self.run_second_ssh = config.getboolean('Remote Environment Settings', 'SSH_TUNNEL_INTO_INTERACTIVE_SESSION')
         self.srun_usepass = config.getboolean('Remote Environment Settings', 'INTERACTIVE_REQUIRES_PASSWORD')
         self.internal_ssh_usepass = config.getboolean('Remote Environment Settings', 'INTERNAL_SSH_REQUIRES_PASSWORD')
         password_request_pattern = config.get('Remote Environment Settings', 'PASSWORD_REQUEST_PATTERN')
@@ -305,6 +306,9 @@ class JupyterO2(object):
                 self.srun_timeout = -1
         if self.run_internal_session:
             self.logger.debug("Will start internal interactive session with command:\n    {}".format(self.srun_call))
+            self.logger.debug("Will {} second ssh into interactive session".format(
+                "start" if self.run_second_ssh else "not start"
+            ))
             self.logger.debug(
                 "Will {} password when starting interactive session\n"
                 "Will {} password with ssh-ing into interactive session\n".format(
@@ -399,7 +403,7 @@ class JupyterO2(object):
         # start jupyter and get the URL
         jp_site = self.start_jupyter(self._login_ssh)
         
-        if self.run_internal_session:
+        if self.run_internal_session and self.run_second_ssh:
             # log in to the second ssh
             self.logger.info("\nStarting a second connection to the login node.")
             if self.use_2fa:
