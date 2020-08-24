@@ -173,7 +173,7 @@ class CustomSSH(pxssh.pxssh):
         except IndexError:
             logger = logging.getLogger(__name__)
             logger.debug("Hostname output: {}".format(repr(self.before)))
-            raise JupyterO2Error("Could not get hostname.\nA communication error may have occured; try rerunning.")
+            raise JupyterO2Error("Could not get hostname. A communication error may have occured.\nPlease try again.")
         self.before, self.match, self.after = before, match, after
         return hostname
 
@@ -293,7 +293,8 @@ class JupyterO2(object):
         self.srun_call = srun_call_format.format(
             time=quote(jp_time),
             mem=quote(jp_mem),
-            cores=jp_cores
+            cores=jp_cores,
+            port=jp_port,
         )
         try:
             self.srun_timeout = int(self.srun_timeout)

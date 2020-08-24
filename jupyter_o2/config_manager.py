@@ -32,7 +32,7 @@ JO2_DEFAULTS = {
     "USE_TWO_FACTOR_AUTHENTICATION": False,
     "TWO_FACTOR_AUTHENTICATION_CODE": [""],
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
-    "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 /bin/bash",
+    "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 --tunnel {port}:{port} /bin/bash",
     "START_INTERACTIVE_SESSION_TIMEOUT": None,
     "INTERACTIVE_REQUIRES_PASSWORD": False,
     "INTERNAL_SSH_REQUIRES_PASSWORD": False,
