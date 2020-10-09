@@ -19,7 +19,7 @@ from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config_file, ConfigManager)
 
-JP_SITE_PATTERN_FORMAT = "\s(https?://((localhost)|(127\.0\.0\.1)):{port}[\w\-./%?=]+)\s"
+JP_SITE_PATTERN_FORMAT = "\\s(https?://((localhost)|(127\\.0\\.0\\.1)):{port}[\\w\\-./%?=]+)\\s"
 
 if hasattr(sys.stdout, 'buffer'):
     STDOUT_BUFFER = sys.stdout.buffer
@@ -43,7 +43,7 @@ class CustomSSH(pxssh.pxssh):
     exit_interact = False
     exit_interact_target = b'Success.'
 
-    def login(self, server, username, password='', *args, **kwargs):
+    def login(self, server, username=None, password='', *args, **kwargs):
         """Login to an SSH server while checking the DNS, silencing logs,
         and suppressing the traceback for pxssh exceptions (such as incorrect password errors).
         :return: True if login is successful
@@ -62,7 +62,7 @@ class CustomSSH(pxssh.pxssh):
         except pxssh.ExceptionPxssh as err:
             raise SSHError("pxssh error: {}".format(err))
 
-    def login_2fa(self, server, username, password='', codes=None, *args, **kwargs):
+    def login_2fa(self, server, username=None, password='', codes=None, *args, **kwargs):
         """Login to an SSH server using `login()` and then authenticate with a Duo prompt.
         If ``code`` is `None` or `''`, run `interact()` so that the user can interact with the Duo prompt.
         If ``code`` is not `None`, send ``code`` and continue automatically.

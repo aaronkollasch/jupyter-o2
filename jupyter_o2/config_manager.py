@@ -38,7 +38,7 @@ JO2_DEFAULTS = {
     "SSH_TUNNEL_INTO_INTERACTIVE_SESSION": False,
     "INTERACTIVE_REQUIRES_PASSWORD": False,
     "INTERNAL_SSH_REQUIRES_PASSWORD": False,
-    "PASSWORD_REQUEST_PATTERN": "[\w-]+@[\w-]+'s password: ",
+    "PASSWORD_REQUEST_PATTERN": "[\\w-]+@[\\w-]+'s password: ",
     "DNS_SERVER_GROUPS": DNS_SERVER_GROUPS,
 }
 JO2_DEFAULTS_STR = {key: str(value) for key, value in JO2_DEFAULTS.items()}
