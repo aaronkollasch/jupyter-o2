@@ -225,6 +225,7 @@ class JupyterO2(object):
             jp_time=JO2_DEFAULTS.get("DEFAULT_JP_TIME"),
             jp_mem=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
             jp_cores=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
+            jp_partition=JO2_DEFAULTS.get("DEFAULT_JP_PARTITION"),
             use_2fa=False,
             codes_2fa=JO2_DEFAULTS.get("TWO_FACTOR_AUTHENTICATION_CODE"),
             keepalive=False,
@@ -296,6 +297,7 @@ class JupyterO2(object):
             mem=quote(jp_mem),
             cores=jp_cores,
             port=jp_port,
+            partition=jp_partition,
         )
         try:
             self.srun_timeout = int(self.srun_timeout)

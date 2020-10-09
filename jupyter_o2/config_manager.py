@@ -20,6 +20,7 @@ JO2_DEFAULTS = {
     "DEFAULT_JP_TIME": "0-12:00",
     "DEFAULT_JP_MEM": "1G",
     "DEFAULT_JP_CORES": 1,
+    "DEFAULT_JP_PARTITION": "interactive",
     "DEFAULT_JP_SUBCOMMAND": "notebook",
 
     "MODULE_LOAD_CALL": "",
@@ -32,7 +33,7 @@ JO2_DEFAULTS = {
     "USE_TWO_FACTOR_AUTHENTICATION": False,
     "TWO_FACTOR_AUTHENTICATION_CODE": [""],
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
-    "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p interactive --x11 --tunnel {port}:{port} /bin/bash",
+    "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p {partition} --x11 --tunnel {port}:{port} /bin/bash",
     "START_INTERACTIVE_SESSION_TIMEOUT": None,
     "SSH_TUNNEL_INTO_INTERACTIVE_SESSION": False,
     "INTERACTIVE_REQUIRES_PASSWORD": False,
@@ -106,6 +107,9 @@ def get_base_arg_parser():
     parser.add_argument("-c", "-n", dest="jp_cores", metavar="CORES", type=int,
                         default=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
                         help="cores to allocate for Jupyter")
+    parser.add_argument("--partition", dest="jp_partition", metavar="PARTITION", type=str,
+                        default=JO2_DEFAULTS.get("DEFAULT_JP_PARTITION"),
+                        help="SLURM partition to use for Jupyter")
     parser.add_argument("--2fa", dest="use_2fa", default=False, action='store_true',
                         help="Use two-factor authentication with SSH")
     parser.add_argument("--2fa-code", dest="codes_2fa", metavar="C", type=str, nargs='+',
@@ -152,6 +156,7 @@ class ConfigManager(object):
             jp_time=self.config.get('Defaults', 'DEFAULT_JP_TIME'),
             jp_mem=self.config.get('Defaults', 'DEFAULT_JP_MEM'),
             jp_cores=self.config.getint('Defaults', 'DEFAULT_JP_CORES'),
+            jp_partition=self.config.get("Default", 'DEFAULT_JP_PARTITION'),
             forcegetpass=self.config.getboolean('Settings', 'FORCE_GETPASS'),
             use_2fa=self.config.getboolean('Remote Environment Settings', 'USE_TWO_FACTOR_AUTHENTICATION'),
             codes_2fa=self.config.get('Remote Environment Settings', 'TWO_FACTOR_AUTHENTICATION_CODE').split('\n'),
