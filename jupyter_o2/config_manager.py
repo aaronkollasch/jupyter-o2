@@ -156,7 +156,7 @@ class ConfigManager(object):
             jp_time=self.config.get('Defaults', 'DEFAULT_JP_TIME'),
             jp_mem=self.config.get('Defaults', 'DEFAULT_JP_MEM'),
             jp_cores=self.config.getint('Defaults', 'DEFAULT_JP_CORES'),
-            jp_partition=self.config.get("Default", 'DEFAULT_JP_PARTITION'),
+            jp_partition=self.config.get("Defaults", 'DEFAULT_JP_PARTITION'),
             forcegetpass=self.config.getboolean('Settings', 'FORCE_GETPASS'),
             use_2fa=self.config.getboolean('Remote Environment Settings', 'USE_TWO_FACTOR_AUTHENTICATION'),
             codes_2fa=self.config.get('Remote Environment Settings', 'TWO_FACTOR_AUTHENTICATION_CODE').split('\n'),
