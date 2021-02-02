@@ -168,12 +168,17 @@ class CustomSSH(pxssh.pxssh):
         """
         before, match, after = self.before, self.match, self.after
         self.sendlineprompt("hostname", silence=True)
+        for i in range(10):
+            if len(self.before.decode('utf-8').strip().split('\n')) < 2:
+                logger = logging.getLogger(__name__)
+                logger.debug("Unexpected hostname output: {}".format(repr(self.before)))
+                self.prompt()
         try:
             hostname = self.before.decode('utf-8').strip().split('\n')[1]
         except IndexError:
             logger = logging.getLogger(__name__)
             logger.debug("Hostname output: {}".format(repr(self.before)))
-            raise JupyterO2Error("Could not get hostname. A communication error may have occured.\nPlease try again.")
+            raise JupyterO2Error("Could not get hostname. A communication error may have occurred.\nPlease try again.")
         self.before, self.match, self.after = before, match, after
         return hostname
 
