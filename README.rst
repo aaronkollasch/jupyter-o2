@@ -75,7 +75,7 @@ to request Duo pushes using the arguments ``--2fa --2fa-code 1``.
 
 Requirements and compatibility
 ------------------------------
-* python 2.7 or 3.6+
+* python 3.6+
 * pexpect 4.5+
 * POSIX: Jupyter-O2 has not been tested on Windows, but it may work with Cygwin.
 * pinentry (suggested)
