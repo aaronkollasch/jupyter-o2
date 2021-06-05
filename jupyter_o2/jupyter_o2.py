@@ -60,6 +60,12 @@ class CustomSSH(pxssh.pxssh):
             self.silence_logs()
             return super(CustomSSH, self).login(host, username, password, *args, **kwargs)
         except pxssh.ExceptionPxssh as err:
+            if "could not synchronize with original prompt" in err.value:
+                logger.warning(
+                    "SSH connection did not reach command prompt. "
+                    "Perhaps you need to tell Jupyter-O2 to use 2FA? "
+                    "Add arguments --2fa --2fa-code 1"
+                )
             raise SSHError("pxssh error: {}".format(err))
 
     def login_2fa(self, server, username=None, password='', codes=None, *args, **kwargs):
@@ -493,14 +499,14 @@ class JupyterO2(object):
                     "The timeout ({}) was reached without receiving a password request.".format(timeout))
             s.sendpass(self.__pass)  # automatically silences all logfiles in s
         else:
-            s.PROMPT = "\$"  # TODO allow customization if user has different prompt
+            s.PROMPT = "\\$"  # TODO allow customization if user has different prompt
             if not s.sendlineprompt(self.srun_call, silence=False, timeout=self.srun_timeout)[1]:
                 raise JupyterO2Error("The timeout ({}) was reached without receiving a prompt.".format(timeout))
             s.logfile_read = None
 
         # within interactive session: get the name of the interactive node
         s.PROMPT = s.UNIQUE_PROMPT
-        s.sendlineprompt("unset PROMPT_COMMAND; PS1='[PEXPECT]\$ '")
+        s.sendlineprompt("unset PROMPT_COMMAND; PS1='[PEXPECT]\\$ '")
         jp_interactive_host = s.get_hostname().split('.')[0]
         self.logger.debug("Interactive session started.")
         self.logger.info("Node: {}\n".format(jp_interactive_host))
