@@ -1,11 +1,7 @@
 import os
 import sys
-from errno import EEXIST
 
-try:
-    from ConfigParser import SafeConfigParser as ConfigParser
-except ImportError:
-    from configparser import ConfigParser
+from configparser import ConfigParser
 import argparse
 
 DNS_SERVER_GROUPS = [  # dns servers that have entries for loginXX.o2.rc.hms.harvard.edu
@@ -67,30 +63,21 @@ CFG_SEARCH_LOCATIONS = [
 def generate_config_file(config_dir=None):
     """Write the default configuration file. Overwrites any existing config file.
     :param config_dir: The directory to place the config file,
-    or None or True to use the default directory.
+        or None or True to use the default directory.
     :return: The config file location
     """
     from pkg_resources import resource_string
+
+    resource_package = __name__
+    resource_path = "/".join((CFG_FILENAME,))
+    default_config = resource_string(resource_package, resource_path)
 
     if config_dir is None or config_dir is True:
         config_dir = os.path.join(sys.prefix, "etc", CFG_DIR)
     elif config_dir is False:
         return
-
     config_path = os.path.join(config_dir, CFG_FILENAME)
-
-    resource_package = __name__
-    resource_path = "/".join((CFG_FILENAME,))
-
-    # py27-compatible version of os.makedirs(config_dir, exist_ok=True)
-    try:
-        os.makedirs(config_dir)
-    except OSError as e:
-        if e.errno != EEXIST:
-            raise
-
-    default_config = resource_string(resource_package, resource_path)
-
+    os.makedirs(config_dir, exist_ok=True)
     with open(config_path, "wb") as config_file:
         config_file.write(default_config)
 

@@ -1,10 +1,8 @@
-from __future__ import print_function
 import unittest
 
 from jupyter_o2.utils import (
     check_dns,
     check_port_occupied,
-    print,
     join_cmd,
     try_quit_xquartz,
 )
@@ -24,9 +22,6 @@ class TestUtils(unittest.TestCase):
             check_port_occupied(52138),
             "Port 52138 is occupied, perhaps just by coincidence.",
         )
-
-    def test_print(self):
-        self.assertIsNone(print("", flush=True, end=""))
 
     def test_join_cmd_rejects_semicolon(self):
         self.assertEqual(join_cmd("ls", "-a; rm -rf /"), "ls '-a;' rm -rf /")

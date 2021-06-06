@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import logging
 from time import sleep
@@ -50,10 +48,10 @@ def check_dns(hostname, dns_groups=None):
                 my_resolver = dns.resolver.Resolver()
                 my_resolver.nameservers = dns_servers
                 if dns_err_code > 0:
-                    eprint(
-                        "Could not resolve domain. Trying with nameservers: {}".format(
-                            dns_servers
-                        )
+                    print(
+                        "Could not resolve domain. "
+                        f"Trying with nameservers: {dns_servers}",
+                        file=sys.stderr,
                     )
                     answer = my_resolver.resolve(hostname)
                     hostname = answer[0].address
@@ -66,9 +64,9 @@ def check_dns(hostname, dns_groups=None):
     else:
         dns_err_code = -1
     if dns_err_code == 1:
-        print("Found IP: {}".format(hostname))
+        print(f"Found IP: {hostname}")
     elif dns_err_code == 2:
-        eprint("No IP found for {}".format(hostname))
+        print(f"No IP found for {hostname}", file=sys.stderr)
     return dns_err_code, hostname
 
 
@@ -86,31 +84,6 @@ def check_port_occupied(port, address="127.0.0.1"):
     finally:
         s.close()
     return False
-
-
-if sys.version_info[:2] < (3, 3):
-    old_print = print
-
-    def print(*args, **kwargs):
-        """
-        Compatibility print function for python 2.7,
-        where print() does not accept the flush parameter.
-        """
-        flush = kwargs.pop("flush", False)
-        old_print(*args, **kwargs)
-        if flush:
-            file = kwargs.get("file", sys.stdout)
-            # Why might file=None? IDK, but it works for print(i, file=None)
-            file.flush() if file is not None else sys.stdout.flush()
-
-
-else:
-    old_print = print
-    print = print
-
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def try_quit_xquartz():
@@ -158,8 +131,7 @@ def try_quit_xquartz():
         else:
             print("Failed to quit.")
     except Exception as error:
-        logger.error("Error: {}".format(error.__class__))
-        logger.error(error)
+        logger.error(f"Error: {error.__class__}: {error}")
         print("Failed to quit XQuartz.")
 
 

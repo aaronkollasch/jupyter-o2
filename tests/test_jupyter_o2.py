@@ -1,9 +1,6 @@
 import unittest
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 from jupyter_o2.jupyter_o2 import JupyterO2
 from tests.test_pysectools import MockStringIO

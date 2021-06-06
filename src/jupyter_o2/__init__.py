@@ -1,6 +1,5 @@
 from ._version import version
 from .utils import (
-    eprint,
     join_cmd,
     check_dns,
     try_quit_xquartz,

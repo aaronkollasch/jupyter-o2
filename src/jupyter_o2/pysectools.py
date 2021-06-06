@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import os
 import subprocess
@@ -43,7 +41,7 @@ def zero(s):
         location = id(s) + offset
         ctypes.memset(location, 0, bufsize)
         return True
-    except Exception:
+    except (Exception,):
         return False
 
 
@@ -58,7 +56,7 @@ def cmd_exists(cmd):
             )
             == 0
         )
-    except Exception:
+    except (Exception,):
         return False
 
 
@@ -118,8 +116,7 @@ class Pinentry(object):
     @staticmethod
     def _ask_with_getpass(prompt, description, error, validator):
         if description:
-            print(description, file=sys.stdout)
-            sys.stdout.flush()
+            print(description, file=sys.stdout, flush=True)
         password = None
         while not validator(password):
             if password is not None:
@@ -133,23 +130,21 @@ class Pinentry(object):
     def _ask_with_pinentry(self, prompt, description, error, validator):
         self._waitfor("OK")
         env = os.environ.get
-        self._comm("OPTION lc-ctype=%s" % env("LC_CTYPE", env("LC_ALL", "en_US.UTF-8")))
+        self._comm(f"OPTION lc-ctype={env('LC_CTYPE', env('LC_ALL', 'en_US.UTF-8'))}")
         try:
-            self._comm(
-                "OPTION ttyname=%s" % env("TTY", os.ttyname(sys.stdout.fileno()))
-            )
-        except Exception:
+            self._comm(f"OPTION ttyname={env('TTY', os.ttyname(sys.stdout.fileno()))}")
+        except (Exception,):
             pass
         if env("TERM"):
-            self._comm("OPTION ttytype=%s" % env("TERM"))
+            self._comm(f"OPTION ttytype={env('TERM')}")
         if prompt:
-            self._comm("SETPROMPT %s" % self._esc(prompt))
+            self._comm(f"SETPROMPT {self._esc(prompt)}")
         if description:
-            self._comm("SETDESC %s" % self._esc(description))
+            self._comm(f"SETDESC {self._esc(description)}")
         password = None
         while not validator(password):
             if password is not None:
-                self._comm("SETERROR %s" % self._esc(error))
+                self._comm(f"SETERROR {self._esc(error)}")
             self.process.stdin.write(b"GETPIN\n")
             self.process.stdin.flush()
             try:

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 import sys
 import re
@@ -7,12 +5,7 @@ import atexit
 from signal import signal, SIGABRT, SIGINT, SIGTERM
 import logging
 import webbrowser
-
-try:
-    from shlex import quote
-except ImportError:
-    from pipes import quote
-
+from shlex import quote
 from pexpect import pxssh
 
 from ._version import version as __version__
@@ -29,10 +22,7 @@ JP_SITE_PATTERN_FORMAT = (
     "\\s(https?://((localhost)|(127\\.0\\.0\\.1)):{port}[\\w\\-./%?=]+)\\s"
 )
 
-if hasattr(sys.stdout, "buffer"):
-    STDOUT_BUFFER = sys.stdout.buffer
-else:
-    STDOUT_BUFFER = sys.stdout
+STDOUT_BUFFER = sys.stdout.buffer
 
 
 class JupyterO2Exception(Exception):
@@ -60,10 +50,10 @@ class CustomSSH(pxssh.pxssh):
         """
         logger = logging.getLogger(__name__)
         try:
-            logger.debug("RUN: ssh {}@{}".format(username, server))
+            logger.debug(f"RUN: ssh {username}@{server}")
             dns_err, host = check_dns(server)
             if dns_err == 1:
-                logger.debug("RUN: ssh {}@{}".format(username, host))
+                logger.debug(f"RUN: ssh {username}@{host}")
             elif dns_err == 2:
                 raise SSHError("Unable to resolve server.")
             self.force_password = True
@@ -78,7 +68,7 @@ class CustomSSH(pxssh.pxssh):
                     "Perhaps you need to tell Jupyter-O2 to use 2FA? "
                     "Add arguments --2fa --2fa-code 1"
                 )
-            raise SSHError("pxssh error: {}".format(err))
+            raise SSHError(f"pxssh error: {err}")
 
     def login_2fa(
         self, server, username=None, password="", codes=None, *args, **kwargs
@@ -108,10 +98,7 @@ class CustomSSH(pxssh.pxssh):
             self.sendline(code)
         else:
             self.exit_interact = True
-            if sys.version_info >= (3,):
-                STDOUT_BUFFER.write(kwargs["original_prompt"].encode("latin-1"))
-            else:
-                STDOUT_BUFFER.write(kwargs["original_prompt"])
+            STDOUT_BUFFER.write(kwargs["original_prompt"].encode("latin-1"))
             self.interact()
             self.exit_interact = False
         self.set_unique_prompt()
@@ -151,7 +138,7 @@ class CustomSSH(pxssh.pxssh):
         """
         if not silence:
             logger = logging.getLogger(__name__)
-            logger.debug("SEND: {}".format(s))
+            logger.debug(f"SEND: {s}")
         return super(CustomSSH, self).sendline(s)
 
     def sendlineprompt(self, s="", timeout=-1, silence=True, check_exit_status=False):
@@ -173,11 +160,7 @@ class CustomSSH(pxssh.pxssh):
                 exit_message = "<no message>"
             if exit_code > 0:
                 logger = logging.getLogger(__name__)
-                logger.warning(
-                    "ERROR: in: {0}\n    code {1}: {2}".format(
-                        s, exit_code, exit_message
-                    )
-                )
+                logger.warning(f"ERROR: in: {s}\n    code {exit_code}: {exit_message}")
         return value, prompt
 
     def sendpass(self, password, restore_logs=False):
@@ -219,13 +202,13 @@ class CustomSSH(pxssh.pxssh):
         for i in range(10):
             if len(self.before.decode("utf-8").strip().split("\n")) < 2:
                 logger = logging.getLogger(__name__)
-                logger.debug("Unexpected hostname output: {}".format(repr(self.before)))
+                logger.debug(f"Unexpected hostname output: {repr(self.before)}")
                 self.prompt()
         try:
             hostname = self.before.decode("utf-8").strip().split("\n")[1]
         except IndexError:
             logger = logging.getLogger(__name__)
-            logger.debug("Hostname output: {}".format(repr(self.before)))
+            logger.debug(f"Hostname output: {repr(self.before)}")
             raise JupyterO2Error(
                 "Could not get hostname. A communication error may have occurred.\n"
                 "Please try again."
@@ -340,14 +323,10 @@ class JupyterO2(object):
             if self.codes_2fa:
                 if len(self.codes_2fa) == 1:
                     print_code = self.codes_2fa[0]
-                    self.logger.debug(
-                        "Using 2FA with automatic code {}".format(print_code)
-                    )
+                    self.logger.debug(f"Using 2FA with automatic code {print_code}")
                 else:
                     print_code = ", ".join(self.codes_2fa)
-                    self.logger.debug(
-                        "Using 2FA with automatic codes {}".format(print_code)
-                    )
+                    self.logger.debug(f"Using 2FA with automatic codes {print_code}")
             else:
                 self.logger.debug("Using 2FA with interactive prompt")
         else:
@@ -359,22 +338,18 @@ class JupyterO2(object):
             port_occupied = check_port_occupied(port)
             if port_occupied:
                 self.logger.debug(
-                    "Port {0} is not available, error {1}: {2}".format(
-                        port, port_occupied.errno, port_occupied.strerror
-                    )
+                    f"Port {port} is not available, error {port_occupied}: "
+                    "{port_occupied}"
                 )
             else:
-                self.logger.debug(
-                    "Port {} is available, using for Jupyter-O2.".format(port)
-                )
+                self.logger.debug(f"Port {port} is available, using for Jupyter-O2.")
                 self.jp_port = port
                 success = True
                 break
         if not success:
             self.logger.error(
-                "Port {0} and the next {1} ports are already occupied.".format(
-                    jp_port, port_retries
-                )
+                f"Port {jp_port} and the next {port_retries} "
+                "ports are already occupied."
             )
             raise JupyterO2Error("Could not find an available port.")
         self.logger.debug("")
@@ -395,21 +370,18 @@ class JupyterO2(object):
                 self.srun_timeout = -1
         if self.run_internal_session:
             self.logger.debug(
-                "Will start internal interactive session with command:\n    {}".format(
-                    self.srun_call
-                )
+                "Will start internal interactive session with command:\n"
+                f"    {self.srun_call}"
             )
             self.logger.debug(
-                "Will {} second ssh into interactive session".format(
-                    "start" if self.run_second_ssh else "not start"
-                )
+                f"Will {'start' if self.run_second_ssh else 'not start'} "
+                "second ssh into interactive session"
             )
             self.logger.debug(
-                "Will {} password when starting interactive session\n"
-                "Will {} password with ssh-ing into interactive session\n".format(
-                    "send" if self.srun_usepass else "not send",
-                    "send" if self.internal_ssh_usepass else "not send",
-                )
+                f"Will {'send' if self.srun_usepass else 'not send'} "
+                "password when starting interactive session\n"
+                f"Will {'send' if self.internal_ssh_usepass else 'not send'} "
+                "password with ssh-ing into interactive session\n"
             )
 
         self.init_jupyter_commands = []
@@ -430,9 +402,7 @@ class JupyterO2(object):
         self.jp_call = jp_call_format.format(
             subcommand=quote(subcommand), port=self.jp_port
         )
-        self.logger.debug(
-            "Will run Jupyter with command:\n    {}\n".format(self.jp_call)
-        )
+        self.logger.debug(f"Will run Jupyter with command:\n    {self.jp_call}\n")
 
         self.__pass = ""
         self._pinentry = Pinentry(
@@ -443,7 +413,7 @@ class JupyterO2(object):
 
         login_ssh_options = {
             "ForwardX11": "yes",
-            "LocalForward": "{} 127.0.0.1:{}".format(self.jp_port, self.jp_port),
+            "LocalForward": f"{self.jp_port} 127.0.0.1:{self.jp_port}",
             "PubkeyAuthentication": "no",
         }
         if forwardx11trusted:
@@ -478,7 +448,7 @@ class JupyterO2(object):
         """
         self.__pass = self._pinentry.ask(
             prompt="Enter your passphrase: ",
-            description="Connect to O2 server for jupyter {}".format(self.subcommand),
+            description=f"Connect to O2 server for jupyter {self.subcommand}",
             error="No password entered",
             validator=lambda x: x is not None and len(x) > 0,
         )
@@ -495,7 +465,7 @@ class JupyterO2(object):
         :return: True if connection is successful
         """
         # start login ssh
-        self.logger.info("Connecting to {}@{}".format(self.user, self.host))
+        self.logger.info("Connecting to {self.user}@{self.host}")
         if self.use_2fa:
             if not self._login_ssh.login_2fa(
                 self.host, self.user, self.__pass, self.codes_2fa
@@ -508,7 +478,7 @@ class JupyterO2(object):
 
         # get the login hostname
         jp_login_host = self._login_ssh.get_hostname()
-        self.logger.info("Hostname: {}\n".format(jp_login_host))
+        self.logger.info(f"Hostname: {jp_login_host}\n")
 
         if self.run_internal_session:
             # start an interactive session and get the name of the interactive node
@@ -544,7 +514,7 @@ class JupyterO2(object):
         # password is not needed anymore
         self.clear_pass()
 
-        print("\nJupyter is ready! Access at:\n{}".format(jp_site))
+        print(f"\nJupyter is ready! Access at:\n{jp_site}")
 
         # open Jupyter in browser
         if not self.no_browser:
@@ -567,7 +537,7 @@ class JupyterO2(object):
         :raises JupyterO2Error: if jupyter fails to launch or launch is not detected
         """
         # start jupyter
-        self.logger.info("Starting Jupyter {}.".format(self.subcommand))
+        self.logger.info(f"Starting Jupyter {self.subcommand}.")
         for command in self.init_jupyter_commands:
             s.sendlineprompt(command, silence=False, check_exit_status=True)
         s.sendline(self.jp_call, silence=False)
@@ -582,11 +552,11 @@ class JupyterO2(object):
         if not s.prompt():  # timed out; failed to launch jupyter
             raise JupyterO2Error(
                 "Failed to launch jupyter, or launch not detected. "
-                "(timed out, {})".format(s.timeout)
+                f"(timed out, {s.timeout})"
             )
         s.PROMPT = prompt
         jp_site = s.after.decode("utf-8").strip()
-        self.logger.debug("Jupyter {} started.".format(self.subcommand))
+        self.logger.debug(f"Jupyter {self.subcommand} started.")
 
         return jp_site
 
@@ -618,8 +588,8 @@ class JupyterO2(object):
                 self.srun_call, silence=False, timeout=self.srun_timeout
             )[1]:
                 raise JupyterO2Error(
-                    "The timeout ({}) was reached without receiving a "
-                    "password request.".format(timeout)
+                    f"The timeout ({timeout}) was reached without receiving "
+                    "a password request."
                 )
             s.sendpass(self.__pass)  # automatically silences all logfiles in s
         else:
@@ -628,9 +598,7 @@ class JupyterO2(object):
                 self.srun_call, silence=False, timeout=self.srun_timeout
             )[1]:
                 raise JupyterO2Error(
-                    "The timeout ({}) was reached without receiving a prompt.".format(
-                        timeout
-                    )
+                    f"The timeout ({timeout}) was reached without receiving a prompt."
                 )
             s.logfile_read = None
 
@@ -639,7 +607,7 @@ class JupyterO2(object):
         s.sendlineprompt("unset PROMPT_COMMAND; PS1='[PEXPECT]\\$ '")
         jp_interactive_host = s.get_hostname().split(".")[0]
         self.logger.debug("Interactive session started.")
-        self.logger.info("Node: {}\n".format(jp_interactive_host))
+        self.logger.info(f"Node: {jp_interactive_host}\n")
 
         return jp_interactive_host
 
@@ -675,7 +643,7 @@ class JupyterO2(object):
             prompt = s.PROMPT
             s.PROMPT = self.password_request_pattern
             if not s.sendlineprompt(jp_interactive_command, silence=False)[1]:
-                raise JupyterO2Error("The timeout ({}) was reached.".format(s.timeout))
+                raise JupyterO2Error(f"The timeout ({s.timeout}) was reached.")
             s.PROMPT = prompt
             s.sendpass(self.__pass)
         else:
@@ -693,7 +661,7 @@ class JupyterO2(object):
         try:
             webbrowser.open(site, new=2)
         except webbrowser.Error as error:
-            self.logger.error("Error: {}".format(error))
+            self.logger.error(f"Error: {error}")
             return False
         return True
 
@@ -724,8 +692,6 @@ class JupyterO2(object):
         """
 
         def _print(*args, **kwargs):
-            if sys.version_info[:2] < (3, 3):
-                kwargs.pop("flush", None)
             if self.logger.isEnabledFor(logging.DEBUG):
                 print_func(*args, **kwargs)
 
@@ -776,7 +742,7 @@ def main():
     gen_config = pargs.pop("generate_config")
     if gen_config:
         cfg_path = generate_config_file(gen_config)
-        print("Generated config file at:\n    {}".format(cfg_path))
+        print(f"Generated config file at:\n    {cfg_path}")
         return 0
 
     # print the paths where config files are located,
@@ -811,9 +777,7 @@ def main():
         # # removed error message so that program will use the default subcommand
         # JO2_ARG_PARSER.error("the following arguments are required: subcommand")
         logger.warning(
-            "Jupyter subcommand not provided. Using default: {}".format(
-                default_jp_subcommand
-            )
+            f"Jupyter subcommand not provided. Using default: {default_jp_subcommand}"
         )
         pargs["subcommand"] = default_jp_subcommand
 
@@ -844,8 +808,8 @@ def main():
     try:
         jupyter_o2_runner = JupyterO2(config, **pargs)
         jupyter_o2_runner.run()
-    except JupyterO2Exception as err:
-        logger.error("{0}: {1}".format(err.__class__.__name__, err))
+    except JupyterO2Error as err:
+        logger.error(f"{err.__class__.__name__}: {err}")
         return 1
 
     return 0

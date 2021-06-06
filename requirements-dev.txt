@@ -2,6 +2,7 @@ pexpect>=4.5
 dnspython>=1.15
 pyobjc-framework-Quartz>=4; platform_system=="Darwin"
 pytest
+pytest-cov
 pytest-datafiles
 tox
 black
