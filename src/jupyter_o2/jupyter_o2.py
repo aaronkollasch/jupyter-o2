@@ -14,7 +14,7 @@ except ImportError:
 
 from pexpect import pxssh
 
-from .version import __version__
+from ._version import version as __version__
 from .utils import (join_cmd, check_dns, try_quit_xquartz, check_port_occupied)
 from .pysectools import (zero, Pinentry, PINENTRY_PATH)
 from .config_manager import (JO2_DEFAULTS, CFG_SEARCH_LOCATIONS, generate_config_file, ConfigManager)

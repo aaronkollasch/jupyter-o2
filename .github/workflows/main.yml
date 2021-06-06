@@ -1,0 +1,79 @@
+---
+name: CI
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  tests:
+    name: "Python ${{ matrix.python-version }}"
+    runs-on: "ubuntu-latest"
+    env:
+      USING_COVERAGE: '3.6,3.7,3.8,3.9'
+
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9"]
+
+    steps:
+      - uses: "actions/checkout@v2"
+      - uses: "actions/setup-python@v2"
+        with:
+          python-version: "${{ matrix.python-version }}"
+      - name: "Install dependencies"
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade coverage[toml] virtualenv tox tox-gh-actions
+
+      - name: "Run tox targets for ${{ matrix.python-version }}"
+        run: "python -m tox"
+
+      - name: "Combine coverage"
+        run: |
+          set -xe
+          python -m coverage combine
+          python -m coverage xml
+        if: "contains(env.USING_COVERAGE, matrix.python-version)"
+      - name: "Upload coverage to Codecov"
+        if: "contains(env.USING_COVERAGE, matrix.python-version)"
+        uses: "codecov/codecov-action@v1"
+        with:
+          fail_ci_if_error: true
+
+  package:
+    name: "Build & verify package"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: "actions/checkout@v2"
+        with:
+          # pulls all commits (needed for versioneer to correctly version)
+          fetch-depth: "0"
+      - uses: "actions/setup-python@v2"
+        with:
+          python-version: "3.9"
+
+      - name: "Check git version"
+        run: |
+          git describe --tags # --always  # fail if no tag found
+          python setup.py --version
+      - name: "Install build and twine"
+        run: "python -m pip install build twine"
+      - name: "Build package"
+        run: "python -m build --sdist --wheel ."
+      - name: "List result"
+        run: "ls -l dist"
+      - name: "Check long_description"
+        run: "python -m twine check dist/*"
