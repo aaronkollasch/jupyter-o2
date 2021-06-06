@@ -26,13 +26,13 @@ Next, on your local machine:
 
 Install Jupyter-O2.
 
-.. code-block:: console
+.. code-block:: bash
 
     pip install jupyter-o2
 
 Then, generate the config file.
 
-.. code-block:: console
+.. code-block:: bash
 
     jupyter-o2 --generate-config
 
@@ -40,7 +40,7 @@ Follow the printed path to ``jupyter-o2.cfg`` and edit according to its instruct
 ``DEFAULT_USER`` and ``INIT_JUPYTER_COMMANDS`` fields.
 You may copy this file to any of the locations listed by ``jupyter-o2 --paths`` if you wish.
 
-Make sure you have X11 forwarding active (e.g. install `XQuartz <https://www.xquartz.org/>`_ if on a Mac).
+Make sure you have X11 forwarding active (install `XQuartz <https://www.xquartz.org/>`_ if on a Mac).
 
 For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jupyter-o2 tips`_.
 
@@ -50,7 +50,7 @@ Usage
 ------------------------------
 Jupyter-O2 should be run locally using the following command format:
 
-.. code-block:: console
+.. code-block:: bash
 
     jupyter-o2 [subcommand]
 
@@ -62,7 +62,7 @@ on the `O2 wiki <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_.
 
 Note that if Jupyter is installed on your machine, Jupyter-O2 can also be run as a Jupyter subcommand:
 
-.. code-block:: console
+.. code-block:: bash
 
     jupyter o2 lab
 

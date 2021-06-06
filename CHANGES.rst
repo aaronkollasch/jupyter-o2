@@ -6,7 +6,7 @@ Changelog for Jupyter-O2
 
 **Removed:**
 
-* This version removes compatibility with Python 2.7,
+- This version removes compatibility with Python 2.7,
   which has not been supported since version 1.0.2.
 
 **Improvements:**

@@ -3,6 +3,54 @@ Jupyter-O2 tips
 ===============
 
 --------------------------------------------------------------------------------------------------------------------
+Troubleshooting
+--------------------------------------------------------------------------------------------------------------------
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+X11 error / missing DISPLAY variable
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you see ``srun: error: x11: no local DISPLAY defined``,
+``No DISPLAY variable set``, or similar, you probably need to
+install or reinstall `XQuartz <https://www.xquartz.org/>`__.
+
+To test outside of Jupyter-O2, log in to the server with ``ssh -X``
+and check your DISPLAY using ``echo $DISPLAY``.
+There should be a string printed in response.
+
+A possible alternative is to run Jupyter-O2 with the
+``-Y`` argument to enable trusted X11 forwarding (less secure).
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SSH error: pxssh error: could not synchronize with original prompt
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are not on the HMS network or using the HMS VPN,
+you will need to tell Jupyter-O2 use two-factor authentication
+with the arguments ``--2fa --2fa-code 1``.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+nbsignatures.db
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If Jupyter hangs when opening notebooks for the first time in any
+session, and the console shows error messages such as:
+
+.. code-block::
+
+    > The signatures database cannot be opened; maybe it is corrupted or encrypted.
+    > Failed commiting signatures database to disk.
+
+Disabling Jupyter's signatures database may be the best option, since there is
+no non-networked file system shared between all the interactive compute
+nodes.
+
+1. Enter an interactive session and generate a notebook config using
+   ``jupyter notebook --generate-config``
+2. In ``~/.jupyter/jupyter_notebook_config.py`` set
+   ``c.NotebookNotary.db_file = ':memory:'``
+
+--------------------------------------------------------------------------------------------------------------------
 Useful Jupyter add-ons
 --------------------------------------------------------------------------------------------------------------------
 
@@ -56,51 +104,3 @@ JupyterLab is now
 JupyterLab offers a more complete environment than Jupyter Notebook.
 With tabs for notebooks, terminals, consoles, text editors, and an integrated file browser,
 you could run almost anything you need on O2 from a single browser window.
-
---------------------------------------------------------------------------------------------------------------------
-Troubleshooting
---------------------------------------------------------------------------------------------------------------------
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-X11 error / missing DISPLAY variable
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you see ``srun: error: x11: no local DISPLAY defined``,
-``No DISPLAY variable set``, or similar, you probably need to
-install or reinstall `XQuartz <https://www.xquartz.org/>`__.
-
-To test outside of Jupyter-O2, log in to the server with ``ssh -X``
-and check your DISPLAY using ``echo $DISPLAY``.
-There should be a string printed in response.
-
-A possible alternative is to run Jupyter-O2 with the
-``-Y`` argument to enable trusted X11 forwarding (less secure).
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-SSH error: pxssh error: could not synchronize with original prompt
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you are not on the HMS network or using the HMS VPN,
-you will need to tell Jupyter-O2 use two-factor authentication
-with the arguments ``--2fa --2fa-code 1``.
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-nbsignatures.db
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If Jupyter hangs when opening notebooks for the first time in any
-session, and the console shows error messages such as:
-
-.. code-block::
-
-    > The signatures database cannot be opened; maybe it is corrupted or encrypted.
-    > Failed commiting signatures database to disk.
-
-Disabling Jupyter's signatures database may be the best option, since there is
-no non-networked file system shared between all the interactive compute
-nodes.
-
-1. Enter an interactive session and generate a notebook config using
-   ``jupyter notebook --generate-config``
-2. In ``~/.jupyter/jupyter_notebook_config.py`` set
-   ``c.NotebookNotary.db_file = ':memory:'``
