@@ -55,7 +55,7 @@ class CustomSSH(pxssh.pxssh):
             if dns_err == 1:
                 logger.debug(f"RUN: ssh {username}@{host}")
             elif dns_err == 2:
-                raise SSHError("Unable to resolve server.")
+                raise SSHError(f"Unable to resolve server: {host}")
             self.force_password = True
             self.silence_logs()
             return super(CustomSSH, self).login(
@@ -63,12 +63,17 @@ class CustomSSH(pxssh.pxssh):
             )
         except pxssh.ExceptionPxssh as err:
             if "could not synchronize with original prompt" in err.value:
-                logger.warning(
+                logger.error(
                     "SSH connection did not reach command prompt. "
-                    "Perhaps you need to tell Jupyter-O2 to use 2FA? "
-                    "Add arguments --2fa --2fa-code 1"
+                    "You may need to tell Jupyter-O2 to use 2FA "
+                    "by adding these arguments: --2fa --2fa-code 1"
                 )
-            raise SSHError(f"pxssh error: {err}")
+                return False
+            elif "password refused" in err.value:
+                logger.error("Password refused by SSH server")
+                return False
+            else:
+                raise SSHError(f"pxssh error: {err}")
 
     def login_2fa(
         self, server, username=None, password="", codes=None, *args, **kwargs
@@ -337,12 +342,12 @@ class JupyterO2(object):
         for port in range(jp_port, jp_port + port_retries + 1):
             port_occupied = check_port_occupied(port)
             if port_occupied:
-                self.logger.debug(
-                    f"Port {port} is not available, error {port_occupied}: "
-                    f"{port_occupied}"
-                )
+                self.logger.warning(f"Port {port} is not available, {port_occupied}")
             else:
-                self.logger.debug(f"Port {port} is available, using for Jupyter-O2.")
+                if port != jp_port:
+                    self.logger.info(f"Using port {port} for Jupyter-O2.")
+                else:
+                    self.logger.debug(f"Using port {port} for Jupyter-O2.")
                 self.jp_port = port
                 success = True
                 break
@@ -465,7 +470,7 @@ class JupyterO2(object):
         :return: True if connection is successful
         """
         # start login ssh
-        self.logger.info("Connecting to {self.user}@{self.host}")
+        self.logger.info(f"Connecting to {self.user}@{self.host}")
         if self.use_2fa:
             if not self._login_ssh.login_2fa(
                 self.host, self.user, self.__pass, self.codes_2fa

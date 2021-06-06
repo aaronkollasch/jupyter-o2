@@ -11,7 +11,8 @@ Changelog for Jupyter-O2
 
 **Improvements:**
 
-- Added warning for common error if two-factor authentication is not used
+- Added warning message for a common error if two-factor
+  authentication is not used
 
 **Fixes:**
 
