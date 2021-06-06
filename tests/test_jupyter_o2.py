@@ -8,5 +8,8 @@ class TestJupyterO2:
     @mock.patch("os.isatty")
     @mock.patch("sys.stdout", new=MockStringIO())
     def test_jupyter_o2_init(self, isatty):
+        """
+        We can initialize JupyterO2()
+        """
         isatty.return_value = True
         assert isinstance(JupyterO2(), JupyterO2)
