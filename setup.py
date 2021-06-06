@@ -1,8 +1,5 @@
-#!/usr/bin/env python
+import setuptools
 
-from setuptools import setup
-
-setup(
-    setup_requires=['pbr'],
-    pbr=True,
+setuptools.setup(
+    use_scm_version=True
 )

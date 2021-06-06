@@ -9,7 +9,7 @@ except ImportError:
     from io import StringIO
 
 from jupyter_o2.jupyter_o2 import JupyterO2
-from test.test_pysectools import MockStringIO
+from tests.test_pysectools import MockStringIO
 
 
 class TestJupyterO2(unittest.TestCase):

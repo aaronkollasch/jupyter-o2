@@ -44,11 +44,11 @@ def check_dns(hostname, dns_groups=None):
                 my_resolver.nameservers = dns_servers
                 if dns_err_code > 0:
                     eprint("Could not resolve domain. Trying with nameservers: {}".format(dns_servers))
-                    answer = my_resolver.query(hostname)
+                    answer = my_resolver.resolve(hostname)
                     hostname = answer[0].address
                     dns_err_code = 1
                 else:
-                    my_resolver.query(hostname)
+                    my_resolver.resolve(hostname)
                 break
             except dns.resolver.NXDOMAIN:
                 dns_err_code = 2
