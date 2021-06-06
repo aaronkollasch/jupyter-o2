@@ -339,7 +339,7 @@ class JupyterO2(object):
             if port_occupied:
                 self.logger.debug(
                     f"Port {port} is not available, error {port_occupied}: "
-                    "{port_occupied}"
+                    f"{port_occupied}"
                 )
             else:
                 self.logger.debug(f"Port {port} is available, using for Jupyter-O2.")
@@ -358,7 +358,7 @@ class JupyterO2(object):
             time=quote(jp_time),
             mem=quote(jp_mem),
             cores=jp_cores,
-            port=jp_port,
+            port=self.jp_port,
             partition=jp_partition,
         )
         try:

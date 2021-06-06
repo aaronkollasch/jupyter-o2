@@ -13,6 +13,10 @@ Changelog for Jupyter-O2
 
 - Added warning for common error if two-factor authentication is not used
 
+**Fixes:**
+
+- Fixed moving to a new jupyter port if the original port was occupied
+
 **Updates:**
 
 - Updated packaging system for PEP 517
