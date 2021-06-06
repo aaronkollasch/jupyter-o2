@@ -106,7 +106,16 @@ class CustomSSH(pxssh.pxssh):
             STDOUT_BUFFER.write(kwargs["original_prompt"].encode("latin-1"))
             self.interact()
             self.exit_interact = False
-        self.set_unique_prompt()
+        try:
+            self.set_unique_prompt()
+        except pxssh.EOF:
+            last_line = self.before.strip().rsplit(b"\n", 1)[-1]
+            logger = logging.getLogger(__name__)
+            logger.error(
+                f"SSH connection ended during two-factor authentication.\n"
+                f"{last_line.decode()}"
+            )
+            return False
         return result
 
     def _spawn__interact_read(self, fd):
