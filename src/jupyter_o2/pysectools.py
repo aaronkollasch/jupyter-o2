@@ -4,7 +4,7 @@ import sys
 import os
 import subprocess
 import ctypes
-import getpass  # fallback if pinentry is not installed (optional "brew install pinentry" on macs)
+import getpass  # fallback if pinentry is not installed (e.g. "brew install pinentry")
 
 if sys.platform.startswith("linux"):
     PINENTRY_PATH = "/usr/bin/pinentry"
@@ -49,7 +49,15 @@ def zero(s):
 
 def cmd_exists(cmd):
     try:
-        return subprocess.call("type " + cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True) == 0
+        return (
+            subprocess.call(
+                "type " + cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+            )
+            == 0
+        )
     except Exception:
         return False
 
@@ -71,7 +79,9 @@ class PinentryErrorException(PinentryException):
 
 
 class Pinentry(object):
-    def __init__(self, pinentry_path=PINENTRY_PATH, fallback_to_getpass=True, force_getpass=False):
+    def __init__(
+        self, pinentry_path=PINENTRY_PATH, fallback_to_getpass=True, force_getpass=False
+    ):
         if force_getpass or not cmd_exists(pinentry_path):
             if fallback_to_getpass and os.isatty(sys.stdout.fileno()):
                 self._ask = self._ask_with_getpass
@@ -79,20 +89,24 @@ class Pinentry(object):
             else:
                 raise PinentryUnavailableException()
         else:
-            self.process = subprocess.Popen(pinentry_path,
-                                            stdin=subprocess.PIPE,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT,
-                                            close_fds=True)
+            self.process = subprocess.Popen(
+                pinentry_path,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                close_fds=True,
+            )
             self._ask = self._ask_with_pinentry
             self._close = self._close_pinentry
         self._closed = False
 
-    def ask(self,
-            prompt="Enter the password: ",
-            description=None,
-            error="Wrong password!",
-            validator=lambda x: x is not None):
+    def ask(
+        self,
+        prompt="Enter the password: ",
+        description=None,
+        error="Wrong password!",
+        validator=lambda x: x is not None,
+    ):
         if self._closed:
             raise PinentryClosedException()
         return self._ask(prompt, description, error, validator)
@@ -113,17 +127,20 @@ class Pinentry(object):
             password = getpass.getpass(prompt)
         return password
 
-    def _close_getpass(self): pass
+    def _close_getpass(self):
+        pass
 
     def _ask_with_pinentry(self, prompt, description, error, validator):
         self._waitfor("OK")
         env = os.environ.get
         self._comm("OPTION lc-ctype=%s" % env("LC_CTYPE", env("LC_ALL", "en_US.UTF-8")))
         try:
-            self._comm("OPTION ttyname=%s" % env("TTY", os.ttyname(sys.stdout.fileno())))
+            self._comm(
+                "OPTION ttyname=%s" % env("TTY", os.ttyname(sys.stdout.fileno()))
+            )
         except Exception:
             pass
-        if env('TERM'):
+        if env("TERM"):
             self._comm("OPTION ttytype=%s" % env("TERM"))
         if prompt:
             self._comm("SETPROMPT %s" % self._esc(prompt))
@@ -153,11 +170,11 @@ class Pinentry(object):
                 break
             elif errat is not None and out.startswith(errat):
                 raise PinentryErrorException()
-            out = self.process.stdout.readline().decode('utf-8')
+            out = self.process.stdout.readline().decode("utf-8")
         return out
 
     def _comm(self, x):
-        self.process.stdin.write(x.encode('utf-8') + b"\n")
+        self.process.stdin.write(x.encode("utf-8") + b"\n")
         self.process.stdin.flush()
         self._waitfor("OK")
 

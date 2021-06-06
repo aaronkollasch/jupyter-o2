@@ -1,6 +1,7 @@
 import os
 import sys
 from errno import EEXIST
+
 try:
     from ConfigParser import SafeConfigParser as ConfigParser
 except ImportError:
@@ -11,7 +12,8 @@ DNS_SERVER_GROUPS = [  # dns servers that have entries for loginXX.o2.rc.hms.har
     ["134.174.17.6", "134.174.141.2"],  # HMS nameservers
     ["128.103.1.1", "128.103.201.100", "128.103.200.101"],  # HU nameservers
 ]
-# test that you can access the login nodes (on macs) with nslookup login01.o2.rc.hms.harvard.edu <DNS>
+# test that you can access the login nodes (on macs) with
+# nslookup login01.o2.rc.hms.harvard.edu <DNS>
 
 JO2_DEFAULTS = {
     "DEFAULT_USER": "",
@@ -22,18 +24,19 @@ JO2_DEFAULTS = {
     "DEFAULT_JP_CORES": 1,
     "DEFAULT_JP_PARTITION": "interactive",
     "DEFAULT_JP_SUBCOMMAND": "notebook",
-
     "MODULE_LOAD_CALL": "",
     "SOURCE_JUPYTER_CALL": "",
     "INIT_JUPYTER_COMMANDS": "",
     "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --no-browser",
     "PORT_RETRIES": 10,
     "FORCE_GETPASS": False,
-
     "USE_TWO_FACTOR_AUTHENTICATION": False,
     "TWO_FACTOR_AUTHENTICATION_CODE": [""],
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
-    "INTERACTIVE_CALL_FORMAT": "srun -t {time} --mem {mem} -c {cores} --pty -p {partition} --x11 --tunnel {port}:{port} /bin/bash",
+    "INTERACTIVE_CALL_FORMAT": (
+        "srun -t {time} --mem {mem} -c {cores} --pty -p {partition} "
+        "--x11 --tunnel {port}:{port} /bin/bash"
+    ),
     "START_INTERACTIVE_SESSION_TIMEOUT": None,
     "SSH_TUNNEL_INTO_INTERACTIVE_SESSION": False,
     "INTERACTIVE_REQUIRES_PASSWORD": False,
@@ -46,12 +49,18 @@ JO2_DEFAULTS_STR = {key: str(value) for key, value in JO2_DEFAULTS.items()}
 CFG_FILENAME = "jupyter-o2.cfg"
 CFG_DIR = "jupyter-o2"
 
-CFG_SEARCH_LOCATIONS = [                                        # In order of increasing priority:
-    os.path.join("/etc", CFG_DIR, CFG_FILENAME),                # /etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),      # /usr/local/etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),     # etc/jupyter-o2/jupyter-o2.cfg
-    os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),  # ~/.jupyter-o2.cfg
-    CFG_FILENAME,                                               # ./jupyter-o2.cfg
+CFG_SEARCH_LOCATIONS = [
+    # In order of increasing priority:
+    # --- /etc/jupyter-o2/jupyter-o2.cfg ---
+    os.path.join("/etc", CFG_DIR, CFG_FILENAME),
+    # --- /usr/local/etc/jupyter-o2/jupyter-o2.cfg ---
+    os.path.join("/usr/local/etc", CFG_DIR, CFG_FILENAME),
+    # --- etc/jupyter-o2/jupyter-o2.cfg ---
+    os.path.join(sys.prefix, "etc", CFG_DIR, CFG_FILENAME),
+    # --- ~/.jupyter-o2.cfg ---
+    os.path.join(os.path.expanduser("~"), "." + CFG_FILENAME),
+    # --- ./jupyter-o2.cfg ---
+    CFG_FILENAME,
 ]
 
 
@@ -71,7 +80,7 @@ def generate_config_file(config_dir=None):
     config_path = os.path.join(config_dir, CFG_FILENAME)
 
     resource_package = __name__
-    resource_path = '/'.join((CFG_FILENAME,))
+    resource_path = "/".join((CFG_FILENAME,))
 
     # py27-compatible version of os.makedirs(config_dir, exist_ok=True)
     try:
@@ -82,16 +91,20 @@ def generate_config_file(config_dir=None):
 
     default_config = resource_string(resource_package, resource_path)
 
-    with open(config_path, 'wb') as config_file:
+    with open(config_path, "wb") as config_file:
         config_file.write(default_config)
 
     return config_path
 
 
 def get_base_arg_parser():
-    parser = argparse.ArgumentParser(description='Launch and connect to a Jupyter session on O2')
-    parser.add_argument("subcommand", type=str, nargs='?', help="the subcommand to launch (optional)")
-    parser.add_argument("-u", "--user", default=JO2_DEFAULTS.get("DEFAULT_USER"), type=str,
+    # fmt: off
+    parser = argparse.ArgumentParser(description='Launch and connect to a '
+                                                 'Jupyter session on O2')
+    parser.add_argument("subcommand", type=str, nargs='?',
+                        help="the subcommand to launch (optional)")
+    parser.add_argument("-u", "--user", default=JO2_DEFAULTS.get("DEFAULT_USER"),
+                        type=str,
                         help="your O2 username")
     parser.add_argument("--host", type=str, default=JO2_DEFAULTS.get("DEFAULT_HOST"),
                         help="host to connect to")
@@ -107,25 +120,27 @@ def get_base_arg_parser():
     parser.add_argument("-c", "-n", dest="jp_cores", metavar="CORES", type=int,
                         default=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
                         help="cores to allocate for Jupyter")
-    parser.add_argument("--partition", dest="jp_partition", metavar="PARTITION", type=str,
-                        default=JO2_DEFAULTS.get("DEFAULT_JP_PARTITION"),
+    parser.add_argument("--partition", dest="jp_partition", metavar="PARTITION",
+                        type=str, default=JO2_DEFAULTS.get("DEFAULT_JP_PARTITION"),
                         help="SLURM partition to use for Jupyter")
     parser.add_argument("--2fa", dest="use_2fa", default=False, action='store_true',
                         help="Use two-factor authentication with SSH")
-    parser.add_argument("--2fa-code", dest="codes_2fa", metavar="C", type=str, nargs='+',
+    parser.add_argument("--2fa-code", dest="codes_2fa", metavar="C", type=str,
+                        nargs='+',
                         default=JO2_DEFAULTS.get("TWO_FACTOR_AUTHENTICATION_CODE"),
                         help="Code(s) to use with 2FA (1 for auto-push)")
     parser.add_argument("-k", "--keepalive", default=False, action='store_true',
                         help="keep interactive session alive after exiting Jupyter")
-    parser.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False, action='store_true',
+    parser.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False,
+                        action='store_true',
                         help="do not quit XQuartz")
     parser.add_argument("--force-getpass", dest="forcegetpass", action='store_true',
                         default=JO2_DEFAULTS.get("FORCE_GETPASS"),
                         help="use getpass instead of pinentry for password entry")
     parser.add_argument('--no-browser', dest="no_browser", action='store_true',
                         help="run without opening the browser")
-    parser.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted", default=False,
-                        action='store_true',
+    parser.add_argument("-Y", "--ForwardX11Trusted", dest="forwardx11trusted",
+                        default=False, action='store_true',
                         help="enable trusted X11 forwarding, equivalent to ssh -Y")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="increase verbosity level")
@@ -135,30 +150,35 @@ def get_base_arg_parser():
                         help="show configuration paths and exit")
     parser.add_argument('--generate-config', action='store_true',
                         help="generate the default configuration file")
+    # fmt: on
     return parser
 
 
 class ConfigManager(object):
     def __init__(self):
         self.config = ConfigParser(defaults=JO2_DEFAULTS_STR)
-        self.config.add_section('Defaults')
-        self.config.add_section('Settings')
-        self.config.add_section('Remote Environment Settings')
+        self.config.add_section("Defaults")
+        self.config.add_section("Settings")
+        self.config.add_section("Remote Environment Settings")
         self.cfg_locations = self.config.read(CFG_SEARCH_LOCATIONS)
 
     def get_arg_parser(self):
         """Get an arg parser populated with this ConfigManager's defaults."""
         parser = get_base_arg_parser()
         parser.set_defaults(
-            user=self.config.get('Defaults', 'DEFAULT_USER'),
-            host=self.config.get('Defaults', 'DEFAULT_HOST'),
-            jp_port=self.config.getint('Defaults', 'DEFAULT_JP_PORT'),
-            jp_time=self.config.get('Defaults', 'DEFAULT_JP_TIME'),
-            jp_mem=self.config.get('Defaults', 'DEFAULT_JP_MEM'),
-            jp_cores=self.config.getint('Defaults', 'DEFAULT_JP_CORES'),
-            jp_partition=self.config.get("Defaults", 'DEFAULT_JP_PARTITION'),
-            forcegetpass=self.config.getboolean('Settings', 'FORCE_GETPASS'),
-            use_2fa=self.config.getboolean('Remote Environment Settings', 'USE_TWO_FACTOR_AUTHENTICATION'),
-            codes_2fa=self.config.get('Remote Environment Settings', 'TWO_FACTOR_AUTHENTICATION_CODE').split('\n'),
+            user=self.config.get("Defaults", "DEFAULT_USER"),
+            host=self.config.get("Defaults", "DEFAULT_HOST"),
+            jp_port=self.config.getint("Defaults", "DEFAULT_JP_PORT"),
+            jp_time=self.config.get("Defaults", "DEFAULT_JP_TIME"),
+            jp_mem=self.config.get("Defaults", "DEFAULT_JP_MEM"),
+            jp_cores=self.config.getint("Defaults", "DEFAULT_JP_CORES"),
+            jp_partition=self.config.get("Defaults", "DEFAULT_JP_PARTITION"),
+            forcegetpass=self.config.getboolean("Settings", "FORCE_GETPASS"),
+            use_2fa=self.config.getboolean(
+                "Remote Environment Settings", "USE_TWO_FACTOR_AUTHENTICATION"
+            ),
+            codes_2fa=self.config.get(
+                "Remote Environment Settings", "TWO_FACTOR_AUTHENTICATION_CODE"
+            ).split("\n"),
         )
         return parser

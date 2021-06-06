@@ -6,7 +6,7 @@ from .utils import (
     try_quit_xquartz,
     get_xquartz_open_windows,
     xquartz_is_open,
-    quit_xquartz
+    quit_xquartz,
 )
 from .pysectools import (
     zero,
@@ -15,14 +15,9 @@ from .pysectools import (
     PinentryException,
     PinentryUnavailableException,
     PinentryClosedException,
-    PinentryErrorException
+    PinentryErrorException,
 )
-from .jupyter_o2 import (
-    main,
-    JupyterO2,
-    CustomSSH,
-    FilteredOut
-)
+from .jupyter_o2 import main, JupyterO2, CustomSSH, FilteredOut
 from .config_manager import (
     JO2_DEFAULTS,
     CFG_FILENAME,
@@ -31,11 +26,11 @@ from .config_manager import (
     DNS_SERVER_GROUPS,
     ConfigManager,
     generate_config_file,
-    get_base_arg_parser
+    get_base_arg_parser,
 )
 
 __author__ = "Aaron Kollasch"
-__date__ = "2021-06-05"
+__date__ = "2021-06-06"
 __copyright__ = "Copyright 2017-2021, Aaron Kollasch"
 __email__ = "aaron@kollasch.dev"
 __status__ = "Production"
