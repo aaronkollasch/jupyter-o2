@@ -1,13 +1,5 @@
-import unittest
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from unittest import mock
+from io import StringIO
 
 from jupyter_o2.pysectools import zero, cmd_exists, Pinentry
 
@@ -17,19 +9,17 @@ class MockStringIO(StringIO):
         return 1
 
 
-class TestPysectools(unittest.TestCase):
+class TestPysectools:
     def test_zero(self):
         s = "This is a test."
-        self.assertTrue(zero(s))
-        self.assertEqual(
-            s, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        )
+        assert zero(s) is True
+        assert s == "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
     def test_cmd_exists_positive(self):
-        self.assertTrue(cmd_exists("ls"))
+        assert cmd_exists("ls") is True
 
     def test_cmd_exists_negative(self):
-        self.assertFalse(cmd_exists("notacommand_kjnbvc"))
+        assert cmd_exists("notacommand_kjnbvc") is False
 
     @mock.patch("getpass.getpass")
     @mock.patch("os.isatty")
@@ -44,4 +34,4 @@ class TestPysectools(unittest.TestCase):
             "This is an error",
             lambda x: x is not None,
         )
-        self.assertEqual(out, "password")
+        assert out == "password"
