@@ -1,3 +1,2 @@
-recursive-include *.rst
-include LICENSE
-include jupyter_o2/jupyter-o2.cfg
+include LICENSE *.rst
+include src/jupyter_o2/jupyter-o2.cfg

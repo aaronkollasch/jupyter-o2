@@ -1,4 +1,4 @@
-from .version import __version__, version_info
+from ._version import version
 from .utils import (
     eprint,
     join_cmd,
@@ -35,7 +35,8 @@ from .config_manager import (
 )
 
 __author__ = "Aaron Kollasch"
-__date__ = "2021-02-02"
+__date__ = "2021-06-05"
 __copyright__ = "Copyright 2017-2021, Aaron Kollasch"
-__email__ = "awkollasch@gmail.com"
+__email__ = "aaron@kollasch.dev"
 __status__ = "Production"
+__version__ = version
