@@ -17,7 +17,7 @@ Jupyter-O2 is a command-line tool that remotely runs Jupyter on
 Orchestra 2 (O2), an HPC cluster managed by the HMS Research Computing group.
 
 Installation
-------------------------------
+============
 First, follow the `O2 wiki's procedure <https://wiki.rc.hms.harvard.edu/display/O2/Jupyter+on+O2>`_
 to set up Jupyter for your account on O2.
 (If you have already installed Jupyter on O2, you can skip this step.)
@@ -46,8 +46,14 @@ For more info on setting up Jupyter and troubleshooting Jupyter-O2, see the `jup
 
 .. _jupyter-o2 tips: https://github.com/aaronkollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst
 
-Usage
+Requirements and compatibility
 ------------------------------
+* python 3.6+
+* pexpect 4.5+
+* POSIX: Jupyter-O2 has not been tested on Windows, but it may work with Cygwin.
+
+Usage
+=====
 Jupyter-O2 should be run locally using the following command format:
 
 .. code-block:: bash
@@ -69,13 +75,6 @@ Note that if Jupyter is installed on your machine, Jupyter-O2 can also be run as
 For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Two-factor authentication
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 If you see a two-factor authentication prompt when SSH'ing into O2, you will need to tell Jupyter-O2
 to request Duo pushes using the arguments ``--2fa --2fa-code 1``.
-
-Requirements and compatibility
-------------------------------
-* python 3.6+
-* pexpect 4.5+
-* POSIX: Jupyter-O2 has not been tested on Windows, but it may work with Cygwin.
-* pinentry (suggested)

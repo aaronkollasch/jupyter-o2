@@ -1,73 +1,92 @@
 Changelog for Jupyter-O2
-------------------------
+========================
+
+Unreleased
+----------
+
+Added
+^^^^^
+
+- Better error message if two-factor authentication fails
 
 1.0.5 - 2021-06-06
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------
 
-**Removed:**
+Removed
+^^^^^^^
 
 - This version removes compatibility with Python 2.7,
   which has not been supported since version 1.0.2.
 
-**Improvements:**
+Added
+^^^^^
 
-- Added warning message for a common error if two-factor
+- Warning message for a common error if two-factor
   authentication is not used
 
-**Fixes:**
+Fixed
+^^^^^
 
 - Fixed moving to a new jupyter port if the original port was occupied
 
-**Updates:**
+Updated
+^^^^^^^
 
-- Updated packaging system for PEP 517
+- Packaging system now supports PEP 517
 - Raised minimum dnspython version to 2.0
 
 1.0.4 - 2021-02-02
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------
 
-**New:**
+Added
+^^^^^
 
-- Added option to change SLURM partition
+- Option to change SLURM partition
 
-**Fixes:**
+Fixed
+^^^^^
 
 - #3 Improved handling of hostname decode error
 
 1.0.2 - 2020-08-24
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------
 
-**New:**
+Added
+^^^^^
 
 - #6 Jupyter-O2 now requires only a single ssh session.
   The second ssh session is now disabled by default and can be
   re-enabled in the config file.
 
 1.0.1 - 2020-07-14
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------
 
-**Enhancements:**
+Added
+^^^^^
 
 - #4 Improved README
 
-**Fixes:**
+Fixed
+^^^^^
 
 - #3 Made hostname decode error more readable
 - #5 Disabled timeout when starting interactive session
 
 
 1.0.0 - 2019-05-30
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------
 
-**Fixes:**
+Fixed
+^^^^^
 
 - #3 Improve exception handling
 - Fix handling of alternate ports
 
 0.2.9 - 2018-12-04
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------
 
-**New:**
+Added
+^^^^^
 
 - #1 Initial implementation of Duo 2FA handler to address new O2 login procedures
 
