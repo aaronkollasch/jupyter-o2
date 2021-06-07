@@ -9,7 +9,13 @@ from shlex import quote
 from pexpect import pxssh
 
 from ._version import version as __version__
-from .utils import join_cmd, check_dns, try_quit_xquartz, check_port_occupied
+from .utils import (
+    join_cmd,
+    check_dns,
+    try_quit_xquartz,
+    check_port_occupied,
+    check_nameserver_overlap,
+)
 from .pysectools import zero, Pinentry, PINENTRY_PATH
 from .config_manager import (
     JO2_DEFAULTS,
@@ -345,6 +351,7 @@ class JupyterO2(object):
                 self.logger.debug("Using 2FA with interactive prompt")
         else:
             self.logger.debug("Not using 2FA")
+        self.check_2fa()
 
         # find an open port starting with the supplied port
         success = False
@@ -446,6 +453,32 @@ class JupyterO2(object):
         self.flag_exit = False
         for sig in (SIGABRT, SIGINT, SIGTERM):
             signal(sig, self.term)
+
+    def check_2fa(self):
+        """
+        Check if two-factor authentication is set appropriately
+        for the current network location.
+        """
+        has_overlap = check_nameserver_overlap(dns_groups=None)
+        if has_overlap is None:
+            return
+        if self.use_2fa and has_overlap:
+            self.logger.warning(
+                "WARNING: It looks like this computer is on the HMS network "
+                "and Jupyter-O2 is using two-factor authentication, "
+                "which will cause an unnecessary delay."
+            )
+        elif not self.use_2fa and not has_overlap:
+            self.logger.warning(
+                "WARNING: It looks like this computer is away from the HMS network. "
+                "Jupyter-O2 is not using two-factor authentication "
+                "and is likely to fail.\n"
+                "To enable 2FA, add these arguments: --2fa --2fa-code 1"
+            )
+        else:
+            self.logger.debug(
+                "Jupyter-O2 is using correct 2FA setting for local network."
+            )
 
     def run(self):
         """

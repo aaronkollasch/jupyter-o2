@@ -27,47 +27,63 @@ def check_dns(hostname, dns_groups=None):
     :return: tuple of (dns error code, hostname)
     """
     try:
-        import dns.resolver
+        from dns.resolver import Resolver, NXDOMAIN
     except ImportError:
-        dns = None
+        return -1, hostname
     from .config_manager import ConfigManager
 
-    if dns is not None:
-        if dns_groups is None:
-            dns_server_groups = ast.literal_eval(
-                ConfigManager().config.get(
-                    "Remote Environment Settings", "DNS_SERVER_GROUPS"
-                )
+    if dns_groups is None:
+        dns_server_groups = ast.literal_eval(
+            ConfigManager().config.get(
+                "Remote Environment Settings", "DNS_SERVER_GROUPS"
             )
+        )
 
-            dns_groups = [dns.resolver.Resolver().nameservers] + dns_server_groups
+        dns_groups = [Resolver().nameservers] + dns_server_groups
 
-        dns_err_code = 0
-        for dns_servers in dns_groups:
-            try:
-                my_resolver = dns.resolver.Resolver()
-                my_resolver.nameservers = dns_servers
-                if dns_err_code > 0:
-                    print(
-                        "Could not resolve domain. "
-                        f"Trying with nameservers: {dns_servers}",
-                        file=sys.stderr,
-                    )
-                    answer = my_resolver.resolve(hostname)
-                    hostname = answer[0].address
-                    dns_err_code = 1
-                else:
-                    my_resolver.resolve(hostname)
-                break
-            except dns.resolver.NXDOMAIN:
-                dns_err_code = 2
-    else:
-        dns_err_code = -1
+    dns_err_code = 0
+    for dns_servers in dns_groups:
+        try:
+            my_resolver = Resolver()
+            my_resolver.nameservers = dns_servers
+            if dns_err_code > 0:
+                print(
+                    "Could not resolve domain. "
+                    f"Trying with nameservers: {dns_servers}",
+                    file=sys.stderr,
+                )
+                answer = my_resolver.resolve(hostname)
+                hostname = answer[0].address
+                dns_err_code = 1
+            else:
+                my_resolver.resolve(hostname)
+            break
+        except NXDOMAIN:
+            dns_err_code = 2
     if dns_err_code == 1:
         print(f"Found IP: {hostname}")
     elif dns_err_code == 2:
         print(f"No IP found for {hostname}", file=sys.stderr)
     return dns_err_code, hostname
+
+
+def check_nameserver_overlap(dns_groups=None):
+    """
+    Check if the current nameservers overlap with the HMS nameservers.
+
+    :return: True if they overlap, False if not, None if error
+    """
+    try:
+        from dns.resolver import Resolver
+    except ImportError:
+        return None
+    from .config_manager import DNS_SERVER_GROUPS
+
+    if dns_groups is None:
+        dns_groups = DNS_SERVER_GROUPS[0]
+    current_nameservers = Resolver().nameservers
+
+    return bool(set(dns_groups) & set(current_nameservers))
 
 
 def check_port_occupied(port, address="127.0.0.1"):

@@ -8,6 +8,8 @@ Added
 ^^^^^
 
 - Better error message if two-factor authentication fails
+- Warning if two-factor authentication is set incorrectly
+  for the computer's network location
 
 1.0.5 - 2021-06-06
 ------------------
