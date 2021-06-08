@@ -50,7 +50,10 @@ Requirements and compatibility
 ------------------------------
 * python 3.6+
 * pexpect 4.5+
-* POSIX: Jupyter-O2 has not been tested on Windows, but it may work with Cygwin.
+* POSIX: Jupyter-O2 requires a POSIX environment such as macOS or Linux.
+  If you have a Windows machine, you can try using `WSL2`_
+
+.. _WSL2: https://github.com/aaronkollasch/jupyter-o2/blob/master/jupyter_o2_tips.rst#run-on-windows-using-wsl2
 
 Usage
 =====

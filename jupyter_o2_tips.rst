@@ -51,9 +51,34 @@ nodes.
    ``c.NotebookNotary.db_file = ':memory:'``
 
 --------------------------------------------------------------------------------------------------------------------
-Useful Jupyter add-ons
+Run on Windows using WSL2
 --------------------------------------------------------------------------------------------------------------------
 
+*Note: the X server installation may not be necessary, and
+you can first try skipping steps 2 and 6.*
+
+1. Install WSL2 (e.g. Ubuntu on the Windows Store)
+2. Install an X server and configure WSL2 to use the X server
+   (see the `Ubuntu wiki <https://wiki.ubuntu.com/WSL#Running_Graphical_Applications>`_).
+   `Cygwin/X <https://x.cygwin.com>`_ is one option.
+3. Add these lines to your `~/.bashrc` in WSL2, then run ``source ~/.bashrc``
+
+.. code-block:: bash
+
+    export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0
+    export LIBGL_ALWAYS_INDIRECT=1
+
+4. Install Jupyter-O2 on WSL2: ``pip install jupyter-o2``
+5. Configure Jupyter-O2: run ``jupyter-o2 --generate-config`` and edit the file
+
+Now that everything is set up, run Jupyter-O2:
+
+6. Start the X server. For Cygwin, open the Cygwin terminal and run ``startxwin``
+7. Run Jupyter-O2, e.g. ``jupyter-o2 notebook``
+
+--------------------------------------------------------------------------------------------------------------------
+Useful Jupyter add-ons
+--------------------------------------------------------------------------------------------------------------------
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 `Kernels <https://github.com/jupyter/jupyter/wiki/Jupyter-kernels>`__
