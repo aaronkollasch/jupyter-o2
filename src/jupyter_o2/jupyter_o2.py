@@ -655,6 +655,8 @@ class JupyterO2(object):
         jp_interactive_host = s.get_hostname().split(".")[0]
         self.logger.debug("Interactive session started.")
         self.logger.info(f"Node: {jp_interactive_host}\n")
+        if "login" in jp_interactive_host:
+            self.logger.warning(f"WARNING: not on interactive node")
 
         return jp_interactive_host
 
