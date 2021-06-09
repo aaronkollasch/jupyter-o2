@@ -14,7 +14,6 @@ from .utils import (
     check_dns,
     try_quit_xquartz,
     check_port_occupied,
-    check_nameserver_overlap,
 )
 from .pysectools import zero, Pinentry, PINENTRY_PATH
 from .config_manager import (
@@ -44,17 +43,31 @@ class SSHError(JupyterO2Exception):
 
 
 class CustomSSH(pxssh.pxssh):
-    exit_interact = False
     exit_interact_target = b"Success."
+    duo_targets = (b"Duo", b"Passcode or option")
+    duo_pattern = "|".join(f"({t.decode()})" for t in duo_targets)
 
-    def login(self, server, username=None, password="", *args, **kwargs):
+    def login(self, server, username=None, password="", code=None, *args, **kwargs):
         """
         Login to an SSH server while checking the DNS, silencing logs,
         and suppressing the traceback for pxssh exceptions
         (such as incorrect password errors).
+        Watch for a Duo prompt and authenticate with codes.
+        If ``code`` is `'interact'`, run `interact()` so that the user can interact
+            with the Duo prompt.
+        If ``code`` is not `None`, send ``code`` and continue automatically.
         :return: True if login is successful
         """
         logger = logging.getLogger(__name__)
+        new_args = dict(
+            sync_original_prompt=False,
+            auto_prompt_reset=False,
+            original_prompt=f"[#$]|{self.duo_pattern}",
+        )
+        if kwargs:
+            kwargs.update(new_args)
+        else:
+            kwargs = new_args
         try:
             logger.debug(f"RUN: ssh {username}@{server}")
             dns_err, host = check_dns(server)
@@ -64,16 +77,48 @@ class CustomSSH(pxssh.pxssh):
                 raise SSHError(f"Unable to resolve server: {host}")
             self.force_password = True
             self.silence_logs()
-            return super(CustomSSH, self).login(
+            result = super(CustomSSH, self).login(
                 host, username, password, *args, **kwargs
             )
+            if self.match.group() in self.duo_targets:
+                logger.info("Responding to Duo 2FA prompt")
+                if code == "interact":
+                    STDOUT_BUFFER.write(self.after)
+                    try:
+                        self.interact(output_filter=self.exit_interact_filter)
+                    except SSHError:
+                        pass
+                    code = ""
+                self._before = self.buffer_type()
+                self._buffer = self.buffer_type()
+                if code is not None:
+                    self.sendline(code)
+                    i = self.expect(["[#$]", self.duo_pattern])
+                    logger.debug(f"Found prompt #{i}")
+                    if i == 1:  # search for prompt one more time
+                        self.sendline()
+                        i = self.expect(["[#$]", self.duo_pattern])
+                        logger.debug(f"Found prompt #{i}")
+                    if i == 1:
+                        self.close()
+                        last_line = self.before.strip().rsplit(b"\n", 1)[-1].decode()
+                        logger.error(
+                            f"Two-factor authentication failed. last line:\n{last_line}"
+                        )
+                        return False
+            self.reset_prompt()
+
+        except pxssh.EOF:
+            self.close()
+            last_line = self.before.strip().rsplit(b"\n", 1)[-1].decode()
+            logger = logging.getLogger(__name__)
+            logger.error(f"SSH connection ended. last line:\n{last_line}")
+            return False
+
         except pxssh.ExceptionPxssh as err:
+            self.close()
             if "could not synchronize with original prompt" in err.value:
-                logger.error(
-                    "SSH connection did not reach command prompt. "
-                    "You may need to tell Jupyter-O2 to use 2FA "
-                    "by adding these arguments: --2fa --2fa-code 1"
-                )
+                logger.error("SSH connection did not reach command prompt.")
                 return False
             elif "password refused" in err.value:
                 logger.error("Password refused by SSH server")
@@ -81,63 +126,23 @@ class CustomSSH(pxssh.pxssh):
             else:
                 raise SSHError(f"pxssh error: {err}")
 
-    def login_2fa(
-        self, server, username=None, password="", codes=None, *args, **kwargs
-    ):
-        """
-        Login to an SSH server using `login()` and then authenticate with a Duo prompt.
-        If ``code`` is `None` or `''`, run `interact()` so that the user can interact
-            with the Duo prompt.
-        If ``code`` is not `None`, send ``code`` and continue automatically.
-        """
-        new_args = dict(
-            sync_original_prompt=False, auto_prompt_reset=False, original_prompt="Duo"
-        )
-        if codes:
-            new_args["original_prompt"] = "Passcode or option"
-        if len(codes) > 1:
-            code = codes.pop(0)
-        else:
-            code = codes[0]
-        if kwargs:
-            kwargs.update(new_args)
-        else:
-            kwargs = new_args
-        result = self.login(server, username, password, *args, **kwargs)
-
-        if codes:
-            self.sendline(code)
-        else:
-            self.exit_interact = True
-            STDOUT_BUFFER.write(kwargs["original_prompt"].encode("latin-1"))
-            self.interact()
-            self.exit_interact = False
-        try:
-            self.set_unique_prompt()
-        except pxssh.EOF:
-            last_line = self.before.strip().rsplit(b"\n", 1)[-1]
-            logger = logging.getLogger(__name__)
-            logger.error(
-                f"SSH connection ended during two-factor authentication.\n"
-                f"{last_line.decode()}"
-            )
-            return False
         return result
 
-    def _spawn__interact_read(self, fd):
-        """
-        Overrides __interact_read() in pexpect.spawn
-        Necessary to allow programmatic exit from interact().
-        """
-        out = os.read(fd, 1000)
-        if (
-            self.exit_interact is True
-            and fd == self.child_fd
-            and self.exit_interact_target in out
-        ):
-            escape_character = b""
-            return escape_character
-        return out
+    def reset_prompt(self):
+        if not self.sync_original_prompt():
+            self.close()
+            raise pxssh.ExceptionPxssh("could not synchronize with original prompt")
+        if not self.set_unique_prompt():
+            self.close()
+            raise pxssh.ExceptionPxssh(
+                "could not set shell prompt "
+                f"(received: {self.before}, expected: {self.PROMPT})."
+            )
+
+    def exit_interact_filter(self, b):
+        if self.exit_interact_target in b:
+            raise SSHError("exit interact mode")
+        return b
 
     def silence_logs(self):
         """
@@ -180,7 +185,7 @@ class CustomSSH(pxssh.pxssh):
                 exit_message = "<no message>"
             if exit_code > 0:
                 logger = logging.getLogger(__name__)
-                logger.warning(f"ERROR: in: {s}\n    code {exit_code}: {exit_message}")
+                logger.error(f"ERROR: in: {s}\n    code {exit_code}: {exit_message}")
         return value, prompt
 
     def sendpass(self, password, restore_logs=False):
@@ -287,7 +292,7 @@ class JupyterO2(object):
         jp_mem=JO2_DEFAULTS.get("DEFAULT_JP_MEM"),
         jp_cores=JO2_DEFAULTS.get("DEFAULT_JP_CORES"),
         jp_partition=JO2_DEFAULTS.get("DEFAULT_JP_PARTITION"),
-        use_2fa=False,
+        use_2fa=False,  # ignored
         codes_2fa=JO2_DEFAULTS.get("TWO_FACTOR_AUTHENTICATION_CODE"),
         keepalive=False,
         keepxquartz=False,
@@ -300,7 +305,7 @@ class JupyterO2(object):
         self.user = user
         self.host = host
         self.subcommand = subcommand
-        self.use_2fa = use_2fa
+        self.use_2fa = use_2fa  # ignored
         self.codes_2fa = codes_2fa
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
@@ -339,19 +344,12 @@ class JupyterO2(object):
             password_request_pattern.encode("utf-8")
         )
 
-        if self.use_2fa:
-            if self.codes_2fa:
-                if len(self.codes_2fa) == 1:
-                    print_code = self.codes_2fa[0]
-                    self.logger.debug(f"Using 2FA with automatic code {print_code}")
-                else:
-                    print_code = ", ".join(self.codes_2fa)
-                    self.logger.debug(f"Using 2FA with automatic codes {print_code}")
-            else:
-                self.logger.debug("Using 2FA with interactive prompt")
+        if len(self.codes_2fa) == 1:
+            print_code = self.codes_2fa[0]
+            self.logger.debug(f"For 2FA prompts, will use code {print_code}")
         else:
-            self.logger.debug("Not using 2FA")
-        self.check_2fa()
+            print_code = ", ".join(self.codes_2fa)
+            self.logger.debug(f"For 2FA prompts, will use codes {print_code}")
 
         # find an open port starting with the supplied port
         success = False
@@ -454,32 +452,6 @@ class JupyterO2(object):
         for sig in (SIGABRT, SIGINT, SIGTERM):
             signal(sig, self.term)
 
-    def check_2fa(self):
-        """
-        Check if two-factor authentication is set appropriately
-        for the current network location.
-        """
-        has_overlap = check_nameserver_overlap(dns_groups=None)
-        if has_overlap is None:
-            return
-        if self.use_2fa and has_overlap:
-            self.logger.warning(
-                "WARNING: It looks like this computer is on the HMS network "
-                "and Jupyter-O2 is using two-factor authentication, "
-                "which will cause an unnecessary delay."
-            )
-        elif not self.use_2fa and not has_overlap:
-            self.logger.warning(
-                "WARNING: It looks like this computer is away from the HMS network. "
-                "Jupyter-O2 is not using two-factor authentication "
-                "and is likely to fail.\n"
-                "To enable 2FA, add these arguments: --2fa --2fa-code 1"
-            )
-        else:
-            self.logger.debug(
-                "Jupyter-O2 is using correct 2FA setting for local network."
-            )
-
     def run(self):
         """
         Run the standard JupyterO2 sequence
@@ -513,14 +485,9 @@ class JupyterO2(object):
         """
         # start login ssh
         self.logger.info(f"Connecting to {self.user}@{self.host}")
-        if self.use_2fa:
-            if not self._login_ssh.login_2fa(
-                self.host, self.user, self.__pass, self.codes_2fa
-            ):
-                return False
-        else:
-            if not self._login_ssh.login(self.host, self.user, self.__pass):
-                return False
+        code = self.codes_2fa[0] if self.codes_2fa else None
+        if not self._login_ssh.login(self.host, self.user, self.__pass, code):
+            return False
         self.logger.debug("Connected.")
 
         # get the login hostname
@@ -539,14 +506,9 @@ class JupyterO2(object):
         if self.run_internal_session and self.run_second_ssh:
             # log in to the second ssh
             self.logger.info("\nStarting a second connection to the login node.")
-            if self.use_2fa:
-                if not self._second_ssh.login_2fa(
-                    jp_login_host, self.user, self.__pass, self.codes_2fa
-                ):
-                    return False
-            else:
-                if not self._second_ssh.login(jp_login_host, self.user, self.__pass):
-                    return False
+            code = self.codes_2fa[:2][-1] if self.codes_2fa else None
+            if not self._second_ssh.login(jp_login_host, self.user, self.__pass, code):
+                return False
             self.logger.debug("Connected.")
 
             # ssh into the running interactive node
@@ -624,7 +586,7 @@ class JupyterO2(object):
         else:
             s.logfile_read = FilteredOut(
                 STDOUT_BUFFER,
-                [b"srun:", b"authenticity"],
+                [b"srun:", b"authenticity", b"unavailable"],
                 reactions={b"authenticity": self.close_on_known_hosts_error},
             )
 
@@ -656,7 +618,7 @@ class JupyterO2(object):
         self.logger.debug("Interactive session started.")
         self.logger.info(f"Node: {jp_interactive_host}\n")
         if "login" in jp_interactive_host:
-            self.logger.warning("WARNING: not on interactive node")
+            self.logger.warning("WARNING: jupyter will run on login node!")
 
         return jp_interactive_host
 
