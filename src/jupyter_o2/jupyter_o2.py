@@ -590,7 +590,7 @@ class JupyterO2(object):
                 reactions={
                     b"authenticity": self.close_on_known_hosts_error,
                     b"srun: error:": self.close_on_srun_error,
-                    b"in use or unavailable": self.close_on_port_unavailable(),
+                    b"in use or unavailable": self.close_on_port_unavailable,
                 },
             )
 
