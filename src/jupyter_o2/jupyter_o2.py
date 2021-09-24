@@ -587,7 +587,11 @@ class JupyterO2(object):
             s.logfile_read = FilteredOut(
                 STDOUT_BUFFER,
                 [b"srun:", b"authenticity", b"unavailable"],
-                reactions={b"authenticity": self.close_on_known_hosts_error},
+                reactions={
+                    b"authenticity": self.close_on_known_hosts_error,
+                    b"srun: error:": self.close_on_srun_error,
+                    b"in use or unavailable": self.close_on_port_unavailable(),
+                },
             )
 
         timeout = s.timeout if self.srun_timeout == -1 else self.srun_timeout
@@ -632,6 +636,22 @@ class JupyterO2(object):
             "in ssh_known_hosts.\n"
             "If on O2, check with HMS RC."
         )
+        self.term()
+
+    def close_on_srun_error(self):
+        """
+        Print a known_hosts error message and close.
+        """
+        self.logger.critical(
+            "\nCould not start interactive session due to SLURM error."
+        )
+        self.term()
+
+    def close_on_port_unavailable(self):
+        """
+        Print a known_hosts error message and close.
+        """
+        self.logger.critical("\nThe selected port appears to be unavailable.")
         self.term()
 
     def ssh_into_interactive_node(self, s, interactive_host, sendpass=False):
