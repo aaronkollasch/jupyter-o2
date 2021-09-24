@@ -79,5 +79,10 @@ For info on the Jupyter-O2 command-line options, use ``jupyter-o2 --help``.
 
 Two-factor authentication
 -------------------------
-If you see a two-factor authentication prompt when SSH'ing into O2, you will need to tell Jupyter-O2
-to request Duo pushes using the arguments ``--2fa --2fa-code 1``.
+Jupyter-O2 detects the Duo two-factor authentication prompt and
+requests a Duo push by default (code 1).
+To send a pre-generated code, use the argument ``--2fa-code <code>``,
+replacing ``<code>`` with your code.
+
+*Experimental: use* ``--2fa-code interact`` *to interactively respond to the Duo prompt.
+This allows you to request a phone or text push and enter the code you receive.*

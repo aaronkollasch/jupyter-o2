@@ -27,7 +27,7 @@ JO2_DEFAULTS = {
     "PORT_RETRIES": 10,
     "FORCE_GETPASS": False,
     "USE_TWO_FACTOR_AUTHENTICATION": False,
-    "TWO_FACTOR_AUTHENTICATION_CODE": [""],
+    "TWO_FACTOR_AUTHENTICATION_CODE": "1",
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
     "INTERACTIVE_CALL_FORMAT": (
         "srun -t {time} --mem {mem} -c {cores} --pty -p {partition} "

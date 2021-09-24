@@ -5,10 +5,7 @@ import subprocess
 import shlex
 import ast
 
-try:
-    from shlex import quote
-except ImportError:
-    from pipes import quote
+from shlex import quote
 import socket
 
 
@@ -65,25 +62,6 @@ def check_dns(hostname, dns_groups=None):
     elif dns_err_code == 2:
         print(f"No IP found for {hostname}", file=sys.stderr)
     return dns_err_code, hostname
-
-
-def check_nameserver_overlap(dns_groups=None):
-    """
-    Check if the current nameservers overlap with the HMS nameservers.
-
-    :return: True if they overlap, False if not, None if error
-    """
-    try:
-        from dns.resolver import Resolver
-    except ImportError:
-        return None
-    from .config_manager import DNS_SERVER_GROUPS
-
-    if dns_groups is None:
-        dns_groups = DNS_SERVER_GROUPS[0]
-    current_nameservers = Resolver().nameservers
-
-    return bool(set(dns_groups) & set(current_nameservers))
 
 
 def check_port_occupied(port, address="127.0.0.1"):
