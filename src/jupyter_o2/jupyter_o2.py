@@ -80,7 +80,9 @@ class CustomSSH(pxssh.pxssh):
             result = super(CustomSSH, self).login(
                 host, username, password, *args, **kwargs
             )
-            if self.match.group() in self.duo_targets:
+            if self.match == pxssh.TIMEOUT:
+                raise SSHError("Timed out.")
+            elif self.match.group() in self.duo_targets:
                 logger.info("Responding to Duo 2FA prompt")
                 if code == "interact":
                     STDOUT_BUFFER.write(self.after)
@@ -649,7 +651,7 @@ class JupyterO2(object):
 
     def close_on_port_unavailable(self):
         """
-        Print a known_hosts error message and close.
+        Print a port unavailable error message and close.
         """
         self.logger.critical("\nThe selected port appears to be unavailable.")
         self.term()
