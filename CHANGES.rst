@@ -1,6 +1,20 @@
 Changelog for Jupyter-O2
 ========================
 
+1.1.0 - 2021-10-25
+------------------
+
+Jupyter-O2 detects and responds to Duo two-factor authentication
+prompts automatically, requesting a Duo push by default.
+This means that the arguments ``--2fa --2fa-code 1`` are no longer
+required to use two-factor authentication; ``--2fa`` now has no effect.
+
+Added
+^^^^^
+- Automatic detection and handling of 2FA prompts #10
+- More error messages in case of job submission errors #11
+- Interactive mode for responding to 2FA prompt #2
+
 1.0.6 - 2021-06-17
 ------------------
 
