@@ -26,6 +26,7 @@ JO2_DEFAULTS = {
     "RUN_JUPYTER_CALL_FORMAT": "jupyter {subcommand} --port={port} --no-browser",
     "PORT_RETRIES": 10,
     "FORCE_GETPASS": False,
+    "KEEP_XQUARTZ": False,
     "USE_TWO_FACTOR_AUTHENTICATION": False,
     "TWO_FACTOR_AUTHENTICATION_CODE": "1",
     "USE_INTERNAL_INTERACTIVE_SESSION": True,
@@ -118,9 +119,9 @@ def get_base_arg_parser():
                         help="Code(s) to use with 2FA (1 for auto-push)")
     parser.add_argument("-k", "--keepalive", default=False, action='store_true',
                         help="keep interactive session alive after exiting Jupyter")
-    parser.add_argument("--kq", "--keepxquartz", dest="keepxquartz", default=False,
-                        action='store_true',
-                        help="do not quit XQuartz")
+    parser.add_argument("--kq", "--keepxquartz", dest="keepxquartz",
+                        default=JO2_DEFAULTS.get("KEEP_XQUARTZ"),
+                        action='store_true', help="do not quit XQuartz")
     parser.add_argument("--force-getpass", dest="forcegetpass", action='store_true',
                         default=JO2_DEFAULTS.get("FORCE_GETPASS"),
                         help="use getpass instead of pinentry for password entry")
