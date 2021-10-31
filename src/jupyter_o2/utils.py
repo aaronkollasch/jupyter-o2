@@ -2,6 +2,7 @@ import sys
 import logging
 from time import sleep
 import subprocess
+import signal
 import shlex
 import ast
 
@@ -100,10 +101,7 @@ def try_quit_xquartz():
         print("Quitting XQuartz... ", end="")
         open_windows = get_xquartz_open_windows()
         if open_windows is None:
-            logger.warning(
-                "Quitting XQuartz is not supported. "
-                "Import pyobjc-framework-Quartz with pip."
-            )
+            pass
         elif not open_windows:
             quit_xquartz()
         else:
@@ -135,6 +133,17 @@ def get_xquartz_open_windows():
     Requires pyobjc-framework-Quartz (install with pip)
     :return: a list of open windows as python dictionaries
     """
+    # pyobjc-framework-Quartz can segfault if the wrong version is installed
+    logger = logging.getLogger(__name__)
+    p = subprocess.Popen([sys.executable, "-c", "import Quartz"])
+    p.communicate()
+    if p.returncode == -signal.SIGSEGV:
+        logger.warning(
+            "Import of pyobjc-framework-Quartz failed due to a segmentation fault. "
+            "The installed version is incompatible with your system."
+        )
+        return None
+
     try:
         from Quartz import (
             CGWindowListCopyWindowInfo,
@@ -143,6 +152,9 @@ def get_xquartz_open_windows():
         )
         from PyObjCTools import Conversion
     except ImportError:
+        logger.warning(
+            "Import of pyobjc-framework-Quartz failed. Try installing with pip."
+        )
         return None
     # need to use kCGWindowListOptionAll to include windows
     # that are not currently on screen (e.g. minimized)
