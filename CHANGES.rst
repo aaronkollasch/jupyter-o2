@@ -1,6 +1,15 @@
 Changelog for Jupyter-O2
 ========================
 
+1.1.1 - 2021-11-24
+------------------
+
+Added
+^^^^^
+- Fix segmentation fault on ``import Quartz``
+- Fix ``try_quit_xquartz()`` in recent versions of macOS (Use the config option ``KEEP_XQUARTZ`` if quitting XQuartz is not desired.)
+- Remove check for root prompt at ``login()``
+
 1.1.0 - 2021-10-25
 ------------------
 
