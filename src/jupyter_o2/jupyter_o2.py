@@ -62,7 +62,7 @@ class CustomSSH(pxssh.pxssh):
         new_args = dict(
             sync_original_prompt=False,
             auto_prompt_reset=False,
-            original_prompt=f"[#$]|{self.duo_pattern}",
+            original_prompt=f"[$]|{self.duo_pattern}",
         )
         if kwargs:
             kwargs.update(new_args)
@@ -95,11 +95,11 @@ class CustomSSH(pxssh.pxssh):
                 self._buffer = self.buffer_type()
                 if code is not None:
                     self.sendline(code)
-                    i = self.expect(["[#$]", self.duo_pattern])
+                    i = self.expect(["$", self.duo_pattern])
                     logger.debug(f"Found prompt #{i}")
                     if i == 1:  # search for prompt one more time
                         self.sendline()
-                        i = self.expect(["[#$]", self.duo_pattern])
+                        i = self.expect(["$", self.duo_pattern])
                         logger.debug(f"Found prompt #{i}")
                     if i == 1:
                         self.close()

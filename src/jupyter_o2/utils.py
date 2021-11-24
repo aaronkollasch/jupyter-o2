@@ -2,6 +2,7 @@ import sys
 import logging
 from time import sleep
 import subprocess
+import signal
 import shlex
 import ast
 
@@ -100,11 +101,8 @@ def try_quit_xquartz():
         print("Quitting XQuartz... ", end="")
         open_windows = get_xquartz_open_windows()
         if open_windows is None:
-            logger.warning(
-                "Quitting XQuartz is not supported. "
-                "Import pyobjc-framework-Quartz with pip."
-            )
-        elif not open_windows:
+            pass
+        elif len(open_windows) < 2:
             quit_xquartz()
         else:
             print("\nXQuartz window(s) are open. Not quitting.")
@@ -135,18 +133,35 @@ def get_xquartz_open_windows():
     Requires pyobjc-framework-Quartz (install with pip)
     :return: a list of open windows as python dictionaries
     """
+    # pyobjc-framework-Quartz can segfault if the wrong version is installed
+    logger = logging.getLogger(__name__)
+    p = subprocess.Popen([sys.executable, "-c", "import Quartz"])
+    p.communicate()
+    if p.returncode == -signal.SIGSEGV:
+        logger.warning(
+            "Import of pyobjc-framework-Quartz failed due to a segmentation fault. "
+            "The installed version is incompatible with your system."
+        )
+        return None
+
     try:
         from Quartz import (
             CGWindowListCopyWindowInfo,
-            kCGWindowListOptionAll,
+            kCGWindowListExcludeDesktopElements,
             kCGNullWindowID,
         )
         from PyObjCTools import Conversion
     except ImportError:
-        return None
-    # need to use kCGWindowListOptionAll to include windows
-    # that are not currently on screen (e.g. minimized)
-    windows = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID)
+        logger.warning(
+            "Import of pyobjc-framework-Quartz failed. Try installing with pip."
+        )
+    # need to use kCGWindowListExcludeDesktopElements to include windows
+    # that are not currently on screen (e.g. minimized).
+    # kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly
+    # will exclude minimized windows. Use KEEP_XQUARTZ if this is an issue.
+    windows = CGWindowListCopyWindowInfo(
+        kCGWindowListExcludeDesktopElements, kCGNullWindowID
+    )
 
     # then filter for XQuartz main windows
     open_windows = [
@@ -154,9 +169,8 @@ def get_xquartz_open_windows():
         for window in windows
         if window["kCGWindowOwnerName"] == "XQuartz"
         and window["kCGWindowLayer"] == 0
-        and "kCGWindowName" in window.keys()
-        and window["kCGWindowName"]
-        not in ["", "X11 Application Menu", "X11 Preferences"]
+        and window["kCGWindowBounds"]["X"] != 0
+        and window["kCGWindowBounds"]["Y"] != 0
     ]
 
     # convert from NSDictionary to python dictionary
