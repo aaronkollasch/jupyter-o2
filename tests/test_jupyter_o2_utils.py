@@ -3,7 +3,10 @@ from jupyter_o2.utils import (
     check_port_occupied,
     join_cmd,
     try_quit_xquartz,
+    get_most_recent_version,
+    check_for_updates,
 )
+import jupyter_o2
 
 
 class TestUtils:
@@ -37,3 +40,27 @@ class TestUtils:
         try_quit_xquartz does not return an error
         """
         assert try_quit_xquartz() is None
+
+    most_recent_version = get_most_recent_version()
+
+    def test_get_most_recent_version(self):
+        from pkg_resources import parse_version
+        from urllib import request
+        import json
+
+        r = request.urlopen("https://pypi.org/pypi/jupyter-o2/json")
+        d = json.loads(r.read())
+        max_version = max(
+            d["releases"].keys(), key=lambda x: parse_version(x), default=None
+        )
+        assert parse_version(max_version) == parse_version(self.most_recent_version)
+
+    def test_check_version_out_of_date(self, monkeypatch, caplog):
+        monkeypatch.setattr(jupyter_o2, "version", "1.0.0")
+        most_recent_version = check_for_updates()
+        assert most_recent_version is not None
+
+    def test_check_version_up_to_date(self, monkeypatch, caplog):
+        monkeypatch.setattr(jupyter_o2, "version", self.most_recent_version)
+        most_recent_version = check_for_updates()
+        assert most_recent_version is None
