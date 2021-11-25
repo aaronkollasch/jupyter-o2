@@ -14,6 +14,7 @@ from .utils import (
     check_dns,
     try_quit_xquartz,
     check_port_occupied,
+    check_for_updates,
 )
 from .pysectools import zero, Pinentry, PINENTRY_PATH
 from .config_manager import (
@@ -795,6 +796,10 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)  # set root logger level
 
     logger = logging.getLogger(__name__)
+
+    new_version = check_for_updates()
+    if new_version:
+        logger.info(f"A new version of jupyter-o2 is available ({new_version})")
 
     if not cfg_locations:
         logger.warning("Config file could not be read. Using internal defaults.")

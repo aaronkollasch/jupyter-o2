@@ -192,3 +192,37 @@ def xquartz_is_open():
 def quit_xquartz():
     if sys.platform == "darwin":
         subprocess.call(["osascript", "-e", 'quit app "XQuartz"'])
+
+
+def get_most_recent_version():
+    import json
+    from urllib import request, error
+    from pkg_resources import parse_version
+
+    try:
+        r = request.urlopen("https://pypi.org/pypi/jupyter-o2/json")
+    except error.URLError:  # pragma: no cover
+        return
+    if r.code != 200:  # pragma: no cover
+        return
+    d = json.loads(r.read())
+    max_version = max(
+        d["releases"].keys(), key=lambda x: parse_version(x), default=None
+    )
+    return max_version
+
+
+def check_for_updates():
+    from pkg_resources import parse_version
+    from jupyter_o2 import version
+
+    logger = logging.getLogger(__name__)
+    try:
+        most_recent_version = get_most_recent_version()
+    except Exception as e:  # pragma: no cover
+        logger.debug(e, exc_info=True)
+        return
+    if not most_recent_version:  # pragma: no cover
+        return
+    if parse_version(version) < parse_version(most_recent_version):
+        return most_recent_version
