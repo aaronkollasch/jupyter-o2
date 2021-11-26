@@ -1,6 +1,13 @@
 Changelog for Jupyter-O2
 ========================
 
+1.1.2 - 2021-11-26
+------------------
+
+Added
+^^^^^
+- Check for available updates #13
+
 1.1.1 - 2021-11-24
 ------------------
 
@@ -82,38 +89,6 @@ Added
 - #6 Jupyter-O2 now requires only a single ssh session.
   The second ssh session is now disabled by default and can be
   re-enabled in the config file.
-
-1.0.1 - 2020-07-14
-------------------
-
-Added
-^^^^^
-
-- #4 Improved README
-
-Fixed
-^^^^^
-
-- #3 Made hostname decode error more readable
-- #5 Disabled timeout when starting interactive session
-
-
-1.0.0 - 2019-05-30
-------------------
-
-Fixed
-^^^^^
-
-- #3 Improve exception handling
-- Fix handling of alternate ports
-
-0.2.9 - 2018-12-04
-------------------
-
-Added
-^^^^^
-
-- #1 Initial implementation of Duo 2FA handler to address new O2 login procedures
 
 For information about older versions, see their `release notes`__.
 
