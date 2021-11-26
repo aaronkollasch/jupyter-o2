@@ -151,10 +151,11 @@ def get_xquartz_open_windows():
             kCGNullWindowID,
         )
         from PyObjCTools import Conversion
-    except ImportError:
+    except ImportError:  # pragma: no cover
         logger.warning(
             "Import of pyobjc-framework-Quartz failed. Try installing with pip."
         )
+        return None
     # need to use kCGWindowListExcludeDesktopElements to include windows
     # that are not currently on screen (e.g. minimized).
     # kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly
