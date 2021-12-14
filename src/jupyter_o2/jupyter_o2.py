@@ -592,6 +592,7 @@ class JupyterO2(object):
                 [b"srun:", b"authenticity", b"unavailable"],
                 reactions={
                     b"authenticity": self.close_on_known_hosts_error,
+                    b"No DISPLAY variable set": self.log_x11_error,
                     b"srun: error:": self.close_on_srun_error,
                     b"in use or unavailable": self.close_on_port_unavailable,
                 },
@@ -634,27 +635,41 @@ class JupyterO2(object):
         Print a known_hosts error message and close.
         """
         self.logger.critical(
-            "\nCould not connect to interactive session.\n"
+            "Could not connect to interactive session.\n"
             "For some reason, the requested node is not recognized "
             "in ssh_known_hosts.\n"
             "If on O2, check with HMS RC."
         )
         self.term()
 
+    def log_x11_error(self):
+        """
+        Print an error message for an X11 error
+        """
+        if sys.platform == "darwin":
+            self.logger.critical(
+                "X11 error. "
+                "You may need to reinstall XQuartz. "
+                "Download from https://www.xquartz.org or use brew reinstall xquartz"
+            )
+        else:
+            self.logger.critical(
+                "X11 error. "
+                "You may need to reinstall X11 or export the DISPLAY variable."
+            )
+
     def close_on_srun_error(self):
         """
         Print a known_hosts error message and close.
         """
-        self.logger.critical(
-            "\nCould not start interactive session due to SLURM error."
-        )
+        self.logger.critical("Could not start interactive session due to SLURM error.")
         self.term()
 
     def close_on_port_unavailable(self):
         """
         Print a port unavailable error message and close.
         """
-        self.logger.critical("\nThe selected port appears to be unavailable.")
+        self.logger.critical("The selected port appears to be unavailable.")
         self.term()
 
     def ssh_into_interactive_node(self, s, interactive_host, sendpass=False):
