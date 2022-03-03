@@ -76,6 +76,7 @@ class CustomSSH(pxssh.pxssh):
                 logger.debug(f"RUN: ssh {username}@{host}")
             elif dns_err == 2:
                 raise SSHError(f"Unable to resolve server: {host}")
+            # This doesn't seem to override the ssh options (like PubkeyAuthentication), so fine to keep as default
             self.force_password = True
             self.silence_logs()
             result = super(CustomSSH, self).login(
@@ -302,6 +303,7 @@ class JupyterO2(object):
         forcegetpass=JO2_DEFAULTS.get("FORCE_GETPASS"),
         no_browser=False,
         forwardx11trusted=False,
+        pubkey_auth=JO2_DEFAULTS.get("USE_PUBKEY"),
     ):
         self.logger = logging.getLogger(__name__)
 
@@ -313,6 +315,7 @@ class JupyterO2(object):
         self.keep_alive = keepalive
         self.keep_xquartz = keepxquartz
         self.no_browser = no_browser
+        self.pubkey_auth = pubkey_auth
 
         if config is None:
             config = ConfigManager().config
@@ -346,6 +349,7 @@ class JupyterO2(object):
         self.password_request_pattern = re.compile(
             password_request_pattern.encode("utf-8")
         )
+        self.pubkey_auth = config.getboolean("Settings", "USE_PUBKEY")
 
         if len(self.codes_2fa) == 1:
             print_code = self.codes_2fa[0]
@@ -436,7 +440,7 @@ class JupyterO2(object):
         login_ssh_options = {
             "ForwardX11": "yes",
             "LocalForward": f"{self.jp_port} 127.0.0.1:{self.jp_port}",
-            "PubkeyAuthentication": "no",
+            "PubkeyAuthentication": "yes" if self.pubkey_auth else "no",
         }
         if forwardx11trusted:
             login_ssh_options["ForwardX11Trusted"] = "yes"
@@ -446,7 +450,7 @@ class JupyterO2(object):
         )
 
         self._second_ssh = CustomSSH(
-            timeout=10, ignore_sighup=False, options={"PubkeyAuthentication": "no"}
+            timeout=10, ignore_sighup=False, options={"PubkeyAuthentication": "yes" if self.pubkey_auth else "no"}  # TODO(Lood) should we have different options for pubkey on login vs compute?
         )
 
         # perform close() on exit or term() on interrupt
@@ -459,7 +463,8 @@ class JupyterO2(object):
         """
         Run the standard JupyterO2 sequence
         """
-        self.ask_for_pin()
+        if not self.pubkey_auth:  # If using PubKey authentication, we don't need to use a password
+            self.ask_for_pin()
         if self.connect() or self.keep_alive:
             self.logger.debug("Starting pexpect interactive mode.")
             self.interact()
