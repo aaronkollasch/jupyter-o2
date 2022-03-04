@@ -76,6 +76,8 @@ class CustomSSH(pxssh.pxssh):
                 logger.debug(f"RUN: ssh {username}@{host}")
             elif dns_err == 2:
                 raise SSHError(f"Unable to resolve server: {host}")
+            # This doesn't seem to override the ssh options
+            #  (like PubkeyAuthentication), so fine to keep as default
             self.force_password = True
             self.silence_logs()
             result = super(CustomSSH, self).login(
@@ -346,6 +348,9 @@ class JupyterO2(object):
         self.password_request_pattern = re.compile(
             password_request_pattern.encode("utf-8")
         )
+        self.use_pubkey = config.getboolean(
+            "Remote Environment Settings", "USE_PUBLIC_KEY_AUTHENTICATION"
+        )
 
         if len(self.codes_2fa) == 1:
             print_code = self.codes_2fa[0]
@@ -436,7 +441,7 @@ class JupyterO2(object):
         login_ssh_options = {
             "ForwardX11": "yes",
             "LocalForward": f"{self.jp_port} 127.0.0.1:{self.jp_port}",
-            "PubkeyAuthentication": "no",
+            "PubkeyAuthentication": "yes" if self.use_pubkey else "no",
         }
         if forwardx11trusted:
             login_ssh_options["ForwardX11Trusted"] = "yes"
@@ -446,7 +451,9 @@ class JupyterO2(object):
         )
 
         self._second_ssh = CustomSSH(
-            timeout=10, ignore_sighup=False, options={"PubkeyAuthentication": "no"}
+            timeout=10,
+            ignore_sighup=False,
+            options={"PubkeyAuthentication": "yes" if self.use_pubkey else "no"},
         )
 
         # perform close() on exit or term() on interrupt
@@ -459,7 +466,10 @@ class JupyterO2(object):
         """
         Run the standard JupyterO2 sequence
         """
-        self.ask_for_pin()
+        if (
+            not self.use_pubkey
+        ):  # If using PubKey authentication, we don't need to use a password
+            self.ask_for_pin()
         if self.connect() or self.keep_alive:
             self.logger.debug("Starting pexpect interactive mode.")
             self.interact()
@@ -592,6 +602,7 @@ class JupyterO2(object):
                 [b"srun:", b"authenticity", b"unavailable"],
                 reactions={
                     b"authenticity": self.close_on_known_hosts_error,
+                    b"No DISPLAY variable set": self.log_x11_error,
                     b"srun: error:": self.close_on_srun_error,
                     b"in use or unavailable": self.close_on_port_unavailable,
                 },
@@ -634,27 +645,41 @@ class JupyterO2(object):
         Print a known_hosts error message and close.
         """
         self.logger.critical(
-            "\nCould not connect to interactive session.\n"
+            "Could not connect to interactive session.\n"
             "For some reason, the requested node is not recognized "
             "in ssh_known_hosts.\n"
             "If on O2, check with HMS RC."
         )
         self.term()
 
+    def log_x11_error(self):
+        """
+        Print an error message for an X11 error
+        """
+        if sys.platform == "darwin":
+            self.logger.critical(
+                "X11 error. "
+                "You may need to reinstall XQuartz. "
+                "Download from https://www.xquartz.org or use brew reinstall xquartz"
+            )
+        else:
+            self.logger.critical(
+                "X11 error. "
+                "You may need to reinstall X11 or export the DISPLAY variable."
+            )
+
     def close_on_srun_error(self):
         """
         Print a known_hosts error message and close.
         """
-        self.logger.critical(
-            "\nCould not start interactive session due to SLURM error."
-        )
+        self.logger.critical("Could not start interactive session due to SLURM error.")
         self.term()
 
     def close_on_port_unavailable(self):
         """
         Print a port unavailable error message and close.
         """
-        self.logger.critical("\nThe selected port appears to be unavailable.")
+        self.logger.critical("The selected port appears to be unavailable.")
         self.term()
 
     def ssh_into_interactive_node(self, s, interactive_host, sendpass=False):
