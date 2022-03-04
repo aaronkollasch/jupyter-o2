@@ -76,7 +76,8 @@ class CustomSSH(pxssh.pxssh):
                 logger.debug(f"RUN: ssh {username}@{host}")
             elif dns_err == 2:
                 raise SSHError(f"Unable to resolve server: {host}")
-            # This doesn't seem to override the ssh options (like PubkeyAuthentication), so fine to keep as default
+            # This doesn't seem to override the ssh options
+            #  (like PubkeyAuthentication), so fine to keep as default
             self.force_password = True
             self.silence_logs()
             result = super(CustomSSH, self).login(

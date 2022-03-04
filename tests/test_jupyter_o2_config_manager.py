@@ -1,12 +1,9 @@
 import os
-from configparser import ConfigParser
 
 from jupyter_o2.config_manager import (
     generate_config_file,
     CFG_FILENAME,
     ConfigManager,
-    JO2_DEFAULTS,
-    CFG_SEARCH_LOCATIONS,
 )
 
 
