@@ -450,7 +450,9 @@ class JupyterO2(object):
         )
 
         self._second_ssh = CustomSSH(
-            timeout=10, ignore_sighup=False, options={"PubkeyAuthentication": "yes" if self.use_pubkey else "no"}
+            timeout=10,
+            ignore_sighup=False,
+            options={"PubkeyAuthentication": "yes" if self.use_pubkey else "no"},
         )
 
         # perform close() on exit or term() on interrupt
@@ -463,7 +465,9 @@ class JupyterO2(object):
         """
         Run the standard JupyterO2 sequence
         """
-        if not self.use_pubkey:  # If using PubKey authentication, we don't need to use a password
+        if (
+            not self.use_pubkey
+        ):  # If using PubKey authentication, we don't need to use a password
             self.ask_for_pin()
         if self.connect() or self.keep_alive:
             self.logger.debug("Starting pexpect interactive mode.")
