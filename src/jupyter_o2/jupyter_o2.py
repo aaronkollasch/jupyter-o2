@@ -450,7 +450,7 @@ class JupyterO2(object):
         )
 
         self._second_ssh = CustomSSH(
-            timeout=10, ignore_sighup=False, options={"PubkeyAuthentication": "yes" if self.use_pubkey else "no"}  # TODO(Lood) should we have different options for pubkey on login vs compute?
+            timeout=10, ignore_sighup=False, options={"PubkeyAuthentication": "yes" if self.use_pubkey else "no"}
         )
 
         # perform close() on exit or term() on interrupt
