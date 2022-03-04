@@ -36,20 +36,20 @@ class TestJupyterO2:
             jupyter_o2.use_pubkey is True
         ), "JupyterO2 didn't load use_pubkey from config"
         # Check that pubkey was actually used
-        assert (
-            "PubkeyAuthentication" in jupyter_o2._login_ssh.options
-        ), f"JupyterO2's login_ssh didn't use pubkey, " \
-           f"options: {jupyter_o2._login_ssh.options}"
-        assert (
-            jupyter_o2._login_ssh.options["PubkeyAuthentication"] == "yes"
-        ), f"JupyterO2's login_ssh didn't use pubkey, " \
-           f"options: {jupyter_o2._login_ssh.options}"
+        assert "PubkeyAuthentication" in jupyter_o2._login_ssh.options, (
+            f"JupyterO2's login_ssh didn't use pubkey, "
+            f"options: {jupyter_o2._login_ssh.options}"
+        )
+        assert jupyter_o2._login_ssh.options["PubkeyAuthentication"] == "yes", (
+            f"JupyterO2's login_ssh didn't use pubkey, "
+            f"options: {jupyter_o2._login_ssh.options}"
+        )
 
-        assert (
-            "PubkeyAuthentication" in jupyter_o2._second_ssh.options
-        ), f"JupyterO2's login_ssh didn't use pubkey, " \
-           f"options: {jupyter_o2._login_ssh.options}"
-        assert (
-            jupyter_o2._second_ssh.options["PubkeyAuthentication"] == "yes"
-        ), f"JupyterO2's login_ssh didn't use pubkey, " \
-           f"options: {jupyter_o2._login_ssh.options}"
+        assert "PubkeyAuthentication" in jupyter_o2._second_ssh.options, (
+            f"JupyterO2's login_ssh didn't use pubkey, "
+            f"options: {jupyter_o2._login_ssh.options}"
+        )
+        assert jupyter_o2._second_ssh.options["PubkeyAuthentication"] == "yes", (
+            f"JupyterO2's login_ssh didn't use pubkey, "
+            f"options: {jupyter_o2._login_ssh.options}"
+        )
