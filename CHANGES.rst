@@ -1,6 +1,14 @@
 Changelog for Jupyter-O2
 ========================
 
+1.1.3 - 2022-03-06
+------------------
+
+Added
+^^^^^
+- Option to use SSH public key authentication #14
+- Better warning messages for X11 DISPLAY error #15
+
 1.1.2 - 2021-11-26
 ------------------
 

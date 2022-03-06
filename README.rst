@@ -38,7 +38,7 @@ Then, generate the config file.
 
 Follow the printed path to ``jupyter-o2.cfg`` and edit according to its instructions, particularly the
 ``DEFAULT_USER`` and ``INIT_JUPYTER_COMMANDS`` fields.
-You may copy this file to any of the locations listed by ``jupyter-o2 --paths`` if you wish.
+You may copy this file to any of the locations listed by ``jupyter-o2 --paths`` for easier access.
 
 Make sure you have X11 forwarding active (install `XQuartz <https://www.xquartz.org/>`_ if on a Mac).
 
