@@ -451,7 +451,7 @@ class JupyterO2(object):
         )
 
         self._second_ssh = CustomSSH(
-            timeout=10,
+            timeout=60,
             ignore_sighup=False,
             options={"PubkeyAuthentication": "yes" if self.use_pubkey else "no"},
         )
@@ -499,7 +499,13 @@ class JupyterO2(object):
         # start login ssh
         self.logger.info(f"Connecting to {self.user}@{self.host}")
         code = self.codes_2fa[0] if self.codes_2fa else None
-        if not self._login_ssh.login(self.host, self.user, self.__pass, code):
+        if not self._login_ssh.login(
+            self.host,
+            self.user,
+            self.__pass,
+            code,
+            login_timeout=self._login_ssh.timeout,
+        ):
             return False
         self.logger.debug("Connected.")
 
@@ -520,7 +526,13 @@ class JupyterO2(object):
             # log in to the second ssh
             self.logger.info("\nStarting a second connection to the login node.")
             code = self.codes_2fa[:2][-1] if self.codes_2fa else None
-            if not self._second_ssh.login(jp_login_host, self.user, self.__pass, code):
+            if not self._second_ssh.login(
+                jp_login_host,
+                self.user,
+                self.__pass,
+                code,
+                login_timeout=self._second_ssh.timeout,
+            ):
                 return False
             self.logger.debug("Connected.")
 
