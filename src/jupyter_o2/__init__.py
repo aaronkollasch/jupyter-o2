@@ -29,7 +29,7 @@ from .config_manager import (
 )
 
 __author__ = "Aaron Kollasch"
-__date__ = "2022-03-06"
+__date__ = "2022-06-13"
 __copyright__ = "Copyright 2017-2022, Aaron Kollasch"
 __email__ = "aaron@kollasch.dev"
 __status__ = "Production"

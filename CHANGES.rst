@@ -1,6 +1,14 @@
 Changelog for Jupyter-O2
 ========================
 
+1.1.4 - 2022-06-13
+------------------
+
+Fixed
+^^^^^
+- Increased login timeout from 10 seconds to 60 seconds
+  to reduce timeout errors
+
 1.1.3 - 2022-03-06
 ------------------
 
