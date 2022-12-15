@@ -25,7 +25,8 @@ def check_dns(hostname, dns_groups=None):
     :return: tuple of (dns error code, hostname)
     """
     try:
-        from dns.resolver import Resolver, NXDOMAIN
+        from dns.resolver import Resolver
+        from dns.exception import DNSException
     except ImportError:
         return -1, hostname
     from .config_manager import ConfigManager
@@ -37,7 +38,10 @@ def check_dns(hostname, dns_groups=None):
             )
         )
 
-        dns_groups = [Resolver().nameservers] + dns_server_groups
+        try:
+            dns_groups = [Resolver().nameservers] + dns_server_groups
+        except DNSException:
+            dns_groups = dns_server_groups
 
     dns_err_code = 0
     for dns_servers in dns_groups:
@@ -56,7 +60,7 @@ def check_dns(hostname, dns_groups=None):
             else:
                 my_resolver.resolve(hostname)
             break
-        except NXDOMAIN:
+        except DNSException:
             dns_err_code = 2
     if dns_err_code == 1:
         print(f"Found IP: {hostname}")
