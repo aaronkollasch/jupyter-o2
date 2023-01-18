@@ -1,3 +1,6 @@
+from dns import resolver
+from dns.exception import DNSException
+
 from jupyter_o2.utils import (
     check_dns,
     check_port_occupied,
@@ -15,6 +18,15 @@ class TestUtils:
         Search for O2 in DNS.
         """
         assert check_dns("o2.hms.harvard.edu")[0] in (0, 1)
+
+    def test_check_dns_resolver_init_error(self, monkeypatch):
+        def resolver_error(*_args, **_kwargs):
+            del _args, _kwargs
+            raise DNSException
+
+        monkeypatch.setattr(resolver, "Resolver", resolver_error)
+
+        assert check_dns("o2.hms.harvard.edu")[0] == 2
 
     def test_check_port_occupied_rejects_occupied(self):
         """
