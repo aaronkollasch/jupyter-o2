@@ -27,7 +27,7 @@ def check_dns(hostname, dns_groups=None):
     try:
         from dns.resolver import Resolver
         from dns.exception import DNSException
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return -1, hostname
     from .config_manager import ConfigManager
 
